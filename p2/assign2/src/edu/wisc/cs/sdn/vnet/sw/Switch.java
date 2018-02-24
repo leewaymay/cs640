@@ -48,7 +48,7 @@ public class Switch extends Device
 			if (retrieveEntry.getIface().getName().equals(inIface.getName())) {
 				// drop the frame, do nothing
 			} else {
-				sendPacket(etherPacket, retrieveEntry.getIface())
+				sendPacket(etherPacket, retrieveEntry.getIface());
 			}
 		} else {
 			for (Map.Entry<String, Iface> e : interfaces.entrySet()) {

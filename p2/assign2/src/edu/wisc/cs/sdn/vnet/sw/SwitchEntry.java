@@ -1,7 +1,7 @@
 package edu.wisc.cs.sdn.vnet.sw;
 
 import edu.wisc.cs.sdn.vnet.Iface;
-import net.floodlightcontroller.packet.MACAddress
+import net.floodlightcontroller.packet.MACAddress;
 
 
 /**
@@ -29,7 +29,7 @@ public class SwitchEntry {
 	 *        be sent to reach the destination or gateway
 	 */
 	public SwitchEntry(MACAddress hostMACAddress, Iface iface) {
-		this.hostMACAddress = hostMACAddresss;
+		this.hostMACAddress = hostMACAddress;
 		this.iface = iface;
 		this.timeStamp = System.currentTimeMillis();
 	}
