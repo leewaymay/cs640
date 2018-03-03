@@ -37,14 +37,17 @@ public class RouteTable
 	{
 		synchronized(this.entries)
         {
-
+        	System.out.println("try to match ip: " + IPv4.fromIPv4Address(ip));
 			int maxPos = 0;
 			RouteEntry bestMatch = null;
 			for (RouteEntry e : this.entries) {
 				int mask = e.getMaskAddress();
 				int compIp = ip & mask;
 				int destIp = e.getDestinationAddress() & mask;
+				System.out.println("try to match: " + IPv4.fromIPv4Address(e.getDestinationAddress()));
+				System.out.println("try to match mask: " + IPv4.fromIPv4Address(mask));
 				if (compIp == destIp) {
+					System.out.println("found a match");
 					int numPos = 0;
 					while ((mask << numPos) != 0) {
 						numPos++;
