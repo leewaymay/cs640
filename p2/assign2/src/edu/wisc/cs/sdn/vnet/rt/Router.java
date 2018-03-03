@@ -92,6 +92,7 @@ public class Router extends Device
 			return;
 		}
 		IPv4 p = (IPv4) etherPacket.getPayload();
+		System.out.println("Enter here");
 		// checksum
 		short oldChecksum = p.getChecksum();
 		p.resetChecksum();
