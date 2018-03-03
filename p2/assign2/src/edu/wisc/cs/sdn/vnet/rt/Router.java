@@ -139,7 +139,9 @@ public class Router extends Device
 		}
 		RouteEntry e = routeTable.lookup(destIp);
 		if (e != null) {
-			ArpEntry arpEntry = arpCache.lookup(destIp);
+			int nextIp = e.getGatewayAddress();
+			if (nextIp == 0) nextIp = destIp;
+			ArpEntry arpEntry = arpCache.lookup(nextIp);
 			etherPacket.setDestinationMACAddress(arpEntry.getMac().toString());
 			etherPacket.setSourceMACAddress(e.getInterface().getMacAddress().toString());
 			sendPacket(etherPacket, e.getInterface());
