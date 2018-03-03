@@ -92,7 +92,6 @@ public class Router extends Device
 			return;
 		}
 		IPv4 p = (IPv4) etherPacket.getPayload();
-		System.out.println("Enter here");
 		// checksum
 		short oldChecksum = p.getChecksum();
 		p.resetChecksum();
@@ -140,8 +139,7 @@ public class Router extends Device
 		}
 		RouteEntry e = routeTable.lookup(destIp);
 		if (e != null) {
-			int nextIp = e.getGatewayAddress();
-			ArpEntry arpEntry = arpCache.lookup(nextIp);
+			ArpEntry arpEntry = arpCache.lookup(destIp);
 			etherPacket.setDestinationMACAddress(arpEntry.getMac().toString());
 			etherPacket.setSourceMACAddress(e.getInterface().getMacAddress().toString());
 			sendPacket(etherPacket, e.getInterface());
