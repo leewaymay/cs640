@@ -35,10 +35,10 @@ public class RouteTable
 	 */
 	public RouteEntry lookup(int ip)
 	{
-		int maxPos = 0;
-		RouteEntry bestMatch = null;
 		synchronized(this.entries)
 		{
+			int maxPos = 0;
+			RouteEntry bestMatch = null;
 			for (RouteEntry e : this.entries) {
 				int mask = e.getMaskAddress();
 				int compIp = ip & mask;
@@ -51,8 +51,8 @@ public class RouteTable
 					}
 				}
 			}
+			return bestMatch;
         }
-		return bestMatch;
 	}
 	
 	/**

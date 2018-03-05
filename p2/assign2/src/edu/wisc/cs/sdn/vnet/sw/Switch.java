@@ -5,8 +5,8 @@ import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
 import net.floodlightcontroller.packet.MACAddress;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Aaron Gember-Jacobson
@@ -25,7 +25,33 @@ public class Switch extends Device
 	{
 
 		super(host,logfile);
-		switchTable = new HashMap<>();
+		switchTable = new ConcurrentHashMap<>();
+		Thread cleaner = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				// clean the hash map
+				while (true) {
+					cleanMap();
+					try {
+						Thread.sleep((long)1000);
+					} catch (InterruptedException e) {
+						//
+						System.out.println("closing the cleaner thread");
+						break;
+					}
+				}
+
+			}
+			private void cleanMap() {
+				if (switchTable.isEmpty()) return;
+				for (Map.Entry<MACAddress, SwitchEntry> entry : switchTable.entrySet()) {
+					if (!entry.getValue().isValid()) {
+						switchTable.remove(entry.getKey());
+					}
+				}
+			}
+		});
+		cleaner.start();
 	}
 
 	/**
@@ -56,10 +82,6 @@ public class Switch extends Device
 					sendPacket(etherPacket, e.getValue());
 				}
 			}
-		}
-		// clean expired switch entry
-		if (retrieveEntry != null && !retrieveEntry.isValid()) {
-			switchTable.remove(destMACAddress);
 		}
 	}
 }

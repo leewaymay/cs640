@@ -94,42 +94,24 @@ public class Router extends Device
 		IPv4 p = (IPv4) etherPacket.getPayload();
 		// checksum
 		short oldChecksum = p.getChecksum();
-		p.resetChecksum();
-
-		byte[] data = new byte[p.getHeaderLength()*4];
-		ByteBuffer bb = ByteBuffer.wrap(data);
-
-		bb.put((byte) (((p.getVersion() & 0xf) << 4) | (p.getHeaderLength() & 0xf)));
-		bb.put(p.getDiffServ());
-		bb.putShort(p.getTotalLength());
-		bb.putShort(p.getIdentification());
-		bb.putShort((short) (((p.getFlags() & 0x7) << 13) | (p.getFragmentOffset() & 0x1fff)));
-		bb.put(p.getTtl());
-		bb.put(p.getProtocol());
-		bb.putShort(p.getChecksum());
-		bb.putInt(p.getSourceAddress());
-		bb.putInt(p.getDestinationAddress());
-		if (p.getOptions() != null)
-			bb.put(p.getOptions());
-
-		bb.rewind();
-		int accumulation = 0;
-		for (int i = 0; i < p.getHeaderLength() * 2; ++i) {
-			accumulation += 0xffff & bb.getShort();
-		}
-		accumulation = ((accumulation >> 16) & 0xffff)
-				+ (accumulation & 0xffff);
-		short newChecksum = (short) (~accumulation & 0xffff);
-
+		p.setChecksum((short)0);
+		byte[] data = p.serialize();
+		p.deserialize(data,0, data.length);
+		short newChecksum = p.getChecksum();
 		if (oldChecksum != newChecksum) {
 			return;
 		}
-		p.setChecksum(newChecksum);
 		// TTL
 		int ttl = p.getTtl() - 1;
 		if (ttl == 0) {
 			return;
 		}
+		p.setTtl((byte)ttl);
+		// recalculate checksum after decrementing ttl
+		p.setChecksum((short)0);
+		data = p.serialize();
+		p.deserialize(data,0, data.length);
+
 		// Decide the interface
 		int destIp = p.getDestinationAddress();
 		for (Map.Entry<String, Iface> e : this.interfaces.entrySet()) {
