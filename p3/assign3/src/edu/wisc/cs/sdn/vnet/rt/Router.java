@@ -4,8 +4,12 @@ import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
 
-import net.floodlightcontroller.packet.Ethernet;
-import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.packet.*;
+
+import java.util.List;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
@@ -17,6 +21,67 @@ public class Router extends Device
 	
 	/** ARP cache for the router */
 	private ArpCache arpCache;
+
+	/** RIP table learned from other routers*/
+	private Map<Integer, RIPv2Entry> ripEntries;
+	private Map<Integer, RIPv2Entry> ripStaticEntries;
+
+	private Thread ripRequestor;
+
+	private Thread ripCleaner;
+
+	private class RipRequestor implements Runnable {
+		@Override
+		public void run() {
+			while (true) {
+				// request RIP
+				this.requestRip();
+				try {
+					Thread.sleep((long)1000*10);
+				} catch (InterruptedException e) {
+					System.err.println("request rip stopped working");
+					break;
+				}
+			}
+		}
+		private void requestRip() {
+			// request rip
+			RIPv2 ripPacket = new RIPv2();
+			List<RIPv2Entry> ripEntryList = new LinkedList<>(ripEntries.values());
+			ripEntryList.addAll(ripStaticEntries.values());
+			ripPacket.setEntries(ripEntryList);
+			UDP udpPacket = new UDP();
+			ripPacket.setParent(udpPacket);
+			udpPacket.setPayload(ripPacket);
+			// TODO: make UDP packets and send through all interfaces
+		}
+	}
+
+	private class RipCleaner implements Runnable {
+		private final long MAX_TIME = 30*1000;
+		@Override
+		public void run() {
+			while (true) {
+				// request RIP
+				this.clean();
+				try {
+					Thread.sleep((long)1000);
+				} catch (InterruptedException e) {
+					System.err.println("rip cleaner stopped working");
+					break;
+				}
+			}
+		}
+		private void clean() {
+			// clean rip entries
+			for (Map.Entry<Integer, RIPv2Entry> e : ripEntries.entrySet()) {
+				if ((System.currentTimeMillis() - e.getValue().getTimestamp()) > MAX_TIME) {
+					routeTable.remove(e.getValue().getAddress(), e.getValue().getSubnetMask());
+					ripEntries.remove(e.getKey());
+				}
+			}
+		}
+	}
 	
 	/**
 	 * Creates a router for a specific host.
@@ -27,6 +92,10 @@ public class Router extends Device
 		super(host,logfile);
 		this.routeTable = new RouteTable();
 		this.arpCache = new ArpCache();
+		this.ripEntries = new ConcurrentHashMap<>();
+		this.ripStaticEntries = new ConcurrentHashMap<>();
+		this.ripRequestor = new Thread(new RipRequestor());
+		this.ripCleaner = new Thread(new RipCleaner());
 	}
 	
 	/**
@@ -34,6 +103,24 @@ public class Router extends Device
 	 */
 	public RouteTable getRouteTable()
 	{ return this.routeTable; }
+
+	/**
+	 * Start running RIP when a static route table is not provided
+	 */
+	public void buildRIP() {
+		// Add entries to route table for subnets that are directly reachable via
+		// the router's interface
+		for (Iface iface : this.interfaces.values()) {
+			int subnet = iface.getSubnetMask() & iface.getIpAddress();
+			RIPv2Entry ripEntry = new RIPv2Entry(subnet, iface.getSubnetMask(), 1);
+			ripStaticEntries.put(subnet, ripEntry);
+			routeTable.insert(subnet,0, iface.getSubnetMask(),iface);
+		}
+		// Send Rip request every 10 seconds
+		this.ripRequestor.start();
+		// start ripCleaner every second
+		this.ripCleaner.start();
+	}
 	
 	/**
 	 * Load a new routing table from a file.
