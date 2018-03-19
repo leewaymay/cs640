@@ -26,34 +26,46 @@ public class Router extends Device
 	private Map<Integer, RIPv2Entry> ripEntries;
 	private Map<Integer, RIPv2Entry> ripStaticEntries;
 
-	private Thread ripRequestor;
+	private Thread ripResponder;
 
 	private Thread ripCleaner;
+	
+	/**
+	 * Creates a router for a specific host.
+	 * @param host hostname for the router
+	 */
+	public Router(String host, DumpFile logfile)
+	{
+		super(host,logfile);
+		this.routeTable = new RouteTable();
+		this.arpCache = new ArpCache();
+		this.ripEntries = new ConcurrentHashMap<>();
+		this.ripStaticEntries = new ConcurrentHashMap<>();
+		this.ripResponder = new Thread(new RipResponder());
+		this.ripCleaner = new Thread(new RipCleaner());
+	}
 
-	private class RipRequestor implements Runnable {
+	private class RipResponder implements Runnable {
 		@Override
 		public void run() {
 			while (true) {
 				// request RIP
-				this.requestRip();
+				this.unsolicitedResponse();
 				try {
 					Thread.sleep((long)1000*10);
 				} catch (InterruptedException e) {
-					System.err.println("request rip stopped working");
+					System.err.println("rip unsolicited responder stopped working");
 					break;
 				}
 			}
 		}
-		private void requestRip() {
+		private void unsolicitedResponse() {
 			// request rip
-			RIPv2 ripPacket = new RIPv2();
-			List<RIPv2Entry> ripEntryList = new LinkedList<>(ripEntries.values());
-			ripEntryList.addAll(ripStaticEntries.values());
-			ripPacket.setEntries(ripEntryList);
-			UDP udpPacket = new UDP();
-			ripPacket.setParent(udpPacket);
-			udpPacket.setPayload(ripPacket);
-			// TODO: make UDP packets and send through all interfaces
+			Ethernet etherPacket = preparePacket(false, "224.0.0.9", "FF:FF:FF:FF:FF:FF");
+			for (Iface iface : interfaces.values()) {
+				etherPacket.setSourceMACAddress(iface.getMacAddress().toString());
+				sendPacket(etherPacket, iface);
+			}
 		}
 	}
 
@@ -62,7 +74,7 @@ public class Router extends Device
 		@Override
 		public void run() {
 			while (true) {
-				// request RIP
+				// clean RIP
 				this.clean();
 				try {
 					Thread.sleep((long)1000);
@@ -82,20 +94,41 @@ public class Router extends Device
 			}
 		}
 	}
-	
-	/**
-	 * Creates a router for a specific host.
-	 * @param host hostname for the router
-	 */
-	public Router(String host, DumpFile logfile)
-	{
-		super(host,logfile);
-		this.routeTable = new RouteTable();
-		this.arpCache = new ArpCache();
-		this.ripEntries = new ConcurrentHashMap<>();
-		this.ripStaticEntries = new ConcurrentHashMap<>();
-		this.ripRequestor = new Thread(new RipRequestor());
-		this.ripCleaner = new Thread(new RipCleaner());
+
+	private void requestRip() {
+		Ethernet etherPacket = preparePacket(true, "224.0.0.9", "FF:FF:FF:FF:FF:FF");
+		for (Iface iface : interfaces.values()) {
+			etherPacket.setSourceMACAddress(iface.getMacAddress().toString());
+			sendPacket(etherPacket, iface);
+		}
+	}
+
+	private Ethernet preparePacket(Boolean isRequest, String destIp, String destMAC) {
+		RIPv2 ripPacket = new RIPv2();
+		if (isRequest) {
+			ripPacket.setCommand(RIPv2.COMMAND_REQUEST);
+		} else {
+			ripPacket.setCommand(RIPv2.COMMAND_RESPONSE);
+			List<RIPv2Entry> ripEntryList = new LinkedList<>(ripEntries.values());
+			ripEntryList.addAll(ripStaticEntries.values());
+			ripPacket.setEntries(ripEntryList);
+		}
+		UDP udpPacket = new UDP();
+		ripPacket.setParent(udpPacket);
+		udpPacket.setPayload(ripPacket);
+		udpPacket.setDestinationPort(UDP.RIP_PORT);
+		udpPacket.setSourcePort(UDP.RIP_PORT);
+		IPv4 ipPacket = new IPv4();
+		ipPacket.setProtocol(IPv4.PROTOCOL_UDP);
+		ipPacket.setPayload(udpPacket);
+		udpPacket.setParent(ipPacket);
+		ipPacket.setDestinationAddress(destIp);
+		Ethernet etherPacket = new Ethernet();
+		etherPacket.setEtherType(Ethernet.TYPE_IPv4);
+		etherPacket.setPayload(ipPacket);
+		ipPacket.setParent(etherPacket);
+		etherPacket.setDestinationMACAddress(destMAC);
+		return etherPacket;
 	}
 	
 	/**
@@ -116,8 +149,10 @@ public class Router extends Device
 			ripStaticEntries.put(subnet, ripEntry);
 			routeTable.insert(subnet,0, iface.getSubnetMask(),iface);
 		}
-		// Send Rip request every 10 seconds
-		this.ripRequestor.start();
+		// Send Rip request
+		this.requestRip();
+		// Send unsolicited RIP response every 10 seconds
+		this.ripResponder.start();
 		// start ripCleaner every second
 		this.ripCleaner.start();
 	}
@@ -194,6 +229,12 @@ public class Router extends Device
 		IPv4 ipPacket = (IPv4)etherPacket.getPayload();
         System.out.println("Handle IP packet");
 
+        // Check if it is a RIP packet
+		if (checkRIP(ipPacket)) {
+			handleRipPacket(ipPacket);
+			return;
+		}
+
         // Verify checksum
         short origCksum = ipPacket.getChecksum();
         ipPacket.resetChecksum();
@@ -220,6 +261,16 @@ public class Router extends Device
 		
         // Do route lookup and forward
         this.forwardIpPacket(etherPacket, inIface);
+	}
+
+	private Boolean checkRIP(IPv4 ipPacket) {
+		// TODO: check if this is a RIP packet
+		return false;
+	}
+
+	private void handleRipPacket(IPv4 ipPacket) {
+		// TODO: handle RIP packet
+		return;
 	}
 
     private void forwardIpPacket(Ethernet etherPacket, Iface inIface)
