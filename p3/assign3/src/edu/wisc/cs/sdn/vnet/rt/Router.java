@@ -280,6 +280,7 @@ public class Router extends Device
 	}
 
 	private void handleRipPacket(Ethernet etherPacket, Iface inIface) {
+		System.out.println("Handle RIP packet");
 		int MAX_COST = 16;
 		// Make sure it's an IP packet
 		if (etherPacket.getEtherType() != Ethernet.TYPE_IPv4)
@@ -334,10 +335,11 @@ public class Router extends Device
 					if (!foundEntry) {
 						RIPv2Entry newEntry = new RIPv2Entry(subnet, nextHop, metric);
 						this.ripEntries.add(newEntry);
-						routeTable.insert(subnet, mask, nextHop, inIface);
+						this.routeTable.insert(subnet, mask, nextHop, inIface);
 					}
 				}
 			}
+			System.out.println(this.routeTable.toString());
 		}
 	}
 
