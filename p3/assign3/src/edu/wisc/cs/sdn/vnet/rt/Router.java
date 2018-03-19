@@ -8,8 +8,6 @@ import net.floodlightcontroller.packet.*;
 
 import java.util.List;
 import java.util.LinkedList;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
@@ -23,8 +21,8 @@ public class Router extends Device
 	private ArpCache arpCache;
 
 	/** RIP table learned from other routers*/
-	private Map<Integer, RIPv2Entry> ripEntries;
-	private Map<Integer, RIPv2Entry> ripStaticEntries;
+	private List<RIPv2Entry> ripEntries;
+	private List< RIPv2Entry> ripStaticEntries;
 
 	private Thread ripResponder;
 
@@ -39,8 +37,8 @@ public class Router extends Device
 		super(host,logfile);
 		this.routeTable = new RouteTable();
 		this.arpCache = new ArpCache();
-		this.ripEntries = new ConcurrentHashMap<>();
-		this.ripStaticEntries = new ConcurrentHashMap<>();
+		this.ripEntries = new LinkedList<>();
+		this.ripStaticEntries = new LinkedList<>();
 		this.ripResponder = new Thread(new RipResponder());
 		this.ripCleaner = new Thread(new RipCleaner());
 	}
@@ -86,10 +84,16 @@ public class Router extends Device
 		}
 		private void clean() {
 			// clean rip entries
-			for (Map.Entry<Integer, RIPv2Entry> e : ripEntries.entrySet()) {
-				if ((System.currentTimeMillis() - e.getValue().getTimestamp()) > MAX_TIME) {
-					routeTable.remove(e.getValue().getAddress(), e.getValue().getSubnetMask());
-					ripEntries.remove(e.getKey());
+			synchronized (ripEntries) {
+				List<RIPv2Entry> toRemove = new LinkedList<>();
+				for (RIPv2Entry e : ripEntries) {
+					if ((System.currentTimeMillis() - e.getTimestamp()) > MAX_TIME) {
+						routeTable.remove(e.getAddress(), e.getSubnetMask());
+					}
+					toRemove.add(e);
+				}
+				for (RIPv2Entry e : toRemove) {
+					ripEntries.remove(e);
 				}
 			}
 		}
@@ -109,8 +113,13 @@ public class Router extends Device
 			ripPacket.setCommand(RIPv2.COMMAND_REQUEST);
 		} else {
 			ripPacket.setCommand(RIPv2.COMMAND_RESPONSE);
-			List<RIPv2Entry> ripEntryList = new LinkedList<>(ripEntries.values());
-			ripEntryList.addAll(ripStaticEntries.values());
+			List<RIPv2Entry> ripEntryList = new LinkedList<>();
+			synchronized (this.ripEntries) {
+				ripEntryList.addAll(this.ripEntries);
+			}
+			synchronized (this.ripStaticEntries) {
+				ripEntryList.addAll(ripStaticEntries);
+			}
 			ripPacket.setEntries(ripEntryList);
 		}
 		UDP udpPacket = new UDP();
@@ -146,7 +155,9 @@ public class Router extends Device
 		for (Iface iface : this.interfaces.values()) {
 			int subnet = iface.getSubnetMask() & iface.getIpAddress();
 			RIPv2Entry ripEntry = new RIPv2Entry(subnet, iface.getSubnetMask(), 1);
-			ripStaticEntries.put(subnet, ripEntry);
+			synchronized (this.ripStaticEntries) {
+				ripStaticEntries.add(ripEntry);
+			}
 			routeTable.insert(subnet,0, iface.getSubnetMask(),iface);
 		}
 		// Send Rip request
@@ -205,9 +216,6 @@ public class Router extends Device
 		System.out.println("*** -> Received packet: " +
                 etherPacket.toString().replace("\n", "\n\t"));
 		
-		/********************************************************************/
-		/* TODO: Handle packets                                             */
-		
 		switch(etherPacket.getEtherType())
 		{
 		case Ethernet.TYPE_IPv4:
@@ -215,8 +223,7 @@ public class Router extends Device
 			break;
 		// Ignore all other packet types, for now
 		}
-		
-		/********************************************************************/
+
 	}
 	
 	private void handleIpPacket(Ethernet etherPacket, Iface inIface)
@@ -231,7 +238,7 @@ public class Router extends Device
 
         // Check if it is a RIP packet
 		if (checkRIP(ipPacket)) {
-			handleRipPacket(ipPacket);
+			handleRipPacket(etherPacket, inIface);
 			return;
 		}
 
@@ -264,13 +271,74 @@ public class Router extends Device
 	}
 
 	private Boolean checkRIP(IPv4 ipPacket) {
-		// TODO: check if this is a RIP packet
+		if (ipPacket.getDestinationAddress() == IPv4.toIPv4Address("224.0.0.9") &&
+				ipPacket.getProtocol() == IPv4.PROTOCOL_UDP) {
+			UDP udpPacket = (UDP) ipPacket.getPayload();
+			return udpPacket.getDestinationPort() == UDP.RIP_PORT;
+		}
 		return false;
 	}
 
-	private void handleRipPacket(IPv4 ipPacket) {
-		// TODO: handle RIP packet
-		return;
+	private void handleRipPacket(Ethernet etherPacket, Iface inIface) {
+		int MAX_COST = 16;
+		// Make sure it's an IP packet
+		if (etherPacket.getEtherType() != Ethernet.TYPE_IPv4)
+		{ return; }
+		IPv4 ipPacket = (IPv4) etherPacket.getPayload();
+		UDP udpPacket = (UDP) ipPacket.getPayload();
+		RIPv2 ripPacket = (RIPv2) udpPacket.getPayload();
+		if (ripPacket.getCommand() == RIPv2.COMMAND_REQUEST) {
+			// handle request
+			String srcIp = IPv4.fromIPv4Address(ipPacket.getSourceAddress());
+			String srcMAC = etherPacket.getSourceMAC().toString();
+			Ethernet replyPacket = preparePacket(false, srcIp, srcMAC);
+			replyPacket.setSourceMACAddress(inIface.getMacAddress().toString());
+			sendPacket(replyPacket, inIface);
+		} else {
+			// handle response
+			List<RIPv2Entry> inEntries = ripPacket.getEntries();
+			synchronized (this.ripEntries) {
+				for (RIPv2Entry e : inEntries) {
+					int destIp = e.getAddress();
+					int mask = e.getSubnetMask();
+					int nextHop = e.getNextHopAddress();
+					int metric = e.getMetric() + 1;
+					if (metric > MAX_COST) {
+						// set MAX_COST to be infinity
+						metric = MAX_COST;
+					}
+					int subnet = destIp & mask;
+					// skip the entry connected to the router itself
+					if ((inIface.getIpAddress() & mask) == subnet) {
+						continue;
+					}
+					Boolean foundEntry = false;
+					for (RIPv2Entry m : this.ripEntries) {
+						if ((m.getAddress() & m.getSubnetMask()) == subnet && m.getSubnetMask() == mask) {
+							// update the entry stored
+							if (m.getNextHopAddress() == nextHop) {
+								m.update();
+								m.setMetric(metric);
+							} else {
+								if (m.getMetric() >= metric) {
+									m.setNextHopAddress(nextHop);
+									m.setMetric(metric);
+									m.update();
+									routeTable.update(subnet, mask, nextHop, inIface);
+								}
+							}
+							foundEntry = true;
+							break;
+						}
+					}
+					if (!foundEntry) {
+						RIPv2Entry newEntry = new RIPv2Entry(subnet, nextHop, metric);
+						this.ripEntries.add(newEntry);
+						routeTable.insert(subnet, mask, nextHop, inIface);
+					}
+				}
+			}
+		}
 	}
 
     private void forwardIpPacket(Ethernet etherPacket, Iface inIface)
