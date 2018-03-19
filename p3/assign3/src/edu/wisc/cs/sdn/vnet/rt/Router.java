@@ -335,7 +335,7 @@ public class Router extends Device
 					if (!foundEntry) {
 						RIPv2Entry newEntry = new RIPv2Entry(subnet, nextHop, metric);
 						this.ripEntries.add(newEntry);
-						this.routeTable.insert(subnet, mask, nextHop, inIface);
+						this.routeTable.insert(subnet, nextHop, nextHop, inIface);
 					}
 				}
 			}
