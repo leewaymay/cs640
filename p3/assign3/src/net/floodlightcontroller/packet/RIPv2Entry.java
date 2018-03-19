@@ -21,11 +21,12 @@ public class RIPv2Entry
     public RIPv2Entry()
     { }
 
-    public RIPv2Entry(int address, int subnetMask, int metric)
+    public RIPv2Entry(int address, int subnetMask, int nextHopAddress, int metric)
     {
         this.addressFamily = ADDRESS_FAMILY_IPv4;
         this.address = address;
         this.subnetMask = subnetMask;
+        this.nextHopAddress = nextHopAddress;
         this.metric = metric;
         this.timeUpdated = System.currentTimeMillis();
     }
