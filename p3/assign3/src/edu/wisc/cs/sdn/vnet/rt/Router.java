@@ -24,9 +24,6 @@ public class Router extends Device
 	/** RIP table learned from other routers*/
 	private List<RIPv2Entry> ripEntries;
 
-	private Thread ripResponder;
-
-	private Thread ripCleaner;
 	
 	/**
 	 * Creates a router for a specific host.
@@ -38,8 +35,6 @@ public class Router extends Device
 		this.routeTable = new RouteTable();
 		this.arpCache = new ArpCache();
 		this.ripEntries = new LinkedList<>();
-		this.ripResponder = new Thread(new RipResponder());
-		this.ripCleaner = new Thread(new RipCleaner());
 	}
 
 	private class RipResponder implements Runnable {
@@ -157,7 +152,7 @@ public class Router extends Device
 		// the router's interface
 		for (Iface iface : this.interfaces.values()) {
 			int subnet = iface.getSubnetMask() & iface.getIpAddress();
-			RIPv2Entry ripEntry = new RIPv2Entry(subnet, subnet, iface.getSubnetMask(), 1);
+			RIPv2Entry ripEntry = new RIPv2Entry(subnet, subnet, iface.getSubnetMask(), 0);
 			ripEntry.setPermenent(true);
 			synchronized (this.ripEntries) {
 				ripEntries.add(ripEntry);
@@ -166,10 +161,13 @@ public class Router extends Device
 		}
 		// Send Rip request
 		this.requestRip();
+		// start two threads as timer
+		Thread ripResponder = new Thread(new RipResponder());
+		Thread ripCleaner = new Thread(new RipCleaner());
 		// Send unsolicited RIP response every 10 seconds
-		this.ripResponder.start();
-		// start ripCleaner every second
-		this.ripCleaner.start();
+		ripResponder.start();
+		// start ripCleaner, scan the rip entries every second
+		ripCleaner.start();
 	}
 	
 	/**
