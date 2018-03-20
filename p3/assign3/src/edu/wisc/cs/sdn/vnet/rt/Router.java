@@ -322,8 +322,6 @@ public class Router extends Device
 					Boolean foundEntry = false;
 					for (RIPv2Entry m : this.ripEntries) {
 						if (((m.getAddress() & m.getSubnetMask()) == subnet) && (m.getSubnetMask() == mask)) {
-							// DEBUG
-							System.out.println("found a match!");
 							foundEntry = true;
 							// update the entry stored
 							if (m.getNextHopAddress() == nextHop) {
@@ -343,8 +341,6 @@ public class Router extends Device
 					if (!foundEntry) {
 						RIPv2Entry newEntry = new RIPv2Entry(subnet,nextHop, mask, metric);
 						this.ripEntries.add(newEntry);
-						// DEBUG
-						System.out.println("Didn't find a match!");
 						this.routeTable.insert(subnet, nextHop, mask, inIface);
 					}
 				}
