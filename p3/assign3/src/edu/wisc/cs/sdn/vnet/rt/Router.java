@@ -6,6 +6,7 @@ import edu.wisc.cs.sdn.vnet.Iface;
 
 import net.floodlightcontroller.packet.*;
 
+import java.awt.*;
 import java.util.List;
 import java.util.LinkedList;
 
@@ -324,7 +325,10 @@ public class Router extends Device
 					}
 					Boolean foundEntry = false;
 					for (RIPv2Entry m : this.ripEntries) {
-						if ((m.getAddress() & m.getSubnetMask()) == subnet && m.getSubnetMask() == mask) {
+						System.out.println("Comparing rip entries");
+						System.out.println(m.toString());
+						System.out.println(e.toString());
+						if (((m.getAddress() & m.getSubnetMask()) == subnet) && (m.getSubnetMask() == mask)) {
 							// DEBUG
 							System.out.println("found a match!");
 							foundEntry = true;
@@ -337,7 +341,7 @@ public class Router extends Device
 									m.setNextHopAddress(nextHop);
 									m.setMetric(metric);
 									m.update();
-									routeTable.update(subnet, mask, nextHop, inIface);
+									this.routeTable.update(subnet, mask, nextHop, inIface);
 								}
 							}
 							break;
