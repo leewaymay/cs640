@@ -88,11 +88,13 @@ public class Router extends Device
 				List<RIPv2Entry> toRemove = new LinkedList<>();
 				for (RIPv2Entry e : ripEntries) {
 					if ((System.currentTimeMillis() - e.getTimestamp()) > MAX_TIME) {
-						routeTable.remove(e.getAddress(), e.getSubnetMask());
+						routeTable.remove((e.getAddress()&e.getSubnetMask()), e.getSubnetMask());
 					}
 					toRemove.add(e);
 				}
 				for (RIPv2Entry e : toRemove) {
+					// DEBUG
+					System.out.println("removed a time-out rip entry");
 					ripEntries.remove(e);
 				}
 			}
@@ -128,6 +130,8 @@ public class Router extends Device
 			}
 			ripPacket.setEntries(ripEntryList);
 		}
+		// DEBUG
+		System.out.println("After preparing the RIP package, the rip entry length is " + ripEntries.size());
 		UDP udpPacket = new UDP();
 		ripPacket.setParent(udpPacket);
 		udpPacket.setPayload(ripPacket);
