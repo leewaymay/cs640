@@ -302,7 +302,8 @@ public class Router extends Device
 				for (RIPv2Entry e : inEntries) {
 					int destIp = e.getAddress();
 					int mask = e.getSubnetMask();
-					int nextHop = e.getNextHopAddress();
+					// set nextHop to be the one who send the packet
+					int nextHop = ipPacket.getSourceAddress();
 					int metric = e.getMetric() + 1;
 					if (metric > MAX_COST) {
 						// set MAX_COST to be infinity
