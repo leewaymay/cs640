@@ -292,18 +292,22 @@ public class Router extends Device
 			// handle request
 			String srcIp = IPv4.fromIPv4Address(ipPacket.getSourceAddress());
 			String srcMAC = etherPacket.getSourceMAC().toString();
+			// DEBUG
+			System.out.println("received request from ip" + IPv4.fromIPv4Address(srcIp));
 			Ethernet replyPacket = preparePacket(false, srcIp, srcMAC);
 			replyPacket.setSourceMACAddress(inIface.getMacAddress().toString());
 			sendPacket(replyPacket, inIface);
 		} else {
 			// handle response
 			List<RIPv2Entry> inEntries = ripPacket.getEntries();
+			// set nextHop to be the one who send the packet
+			int nextHop = ipPacket.getSourceAddress();
+			// DEBUG
+			System.out.println("received response from ip" + IPv4.fromIPv4Address(nextHop));
 			synchronized (this.ripEntries) {
 				for (RIPv2Entry e : inEntries) {
 					int destIp = e.getAddress();
 					int mask = e.getSubnetMask();
-					// set nextHop to be the one who send the packet
-					int nextHop = ipPacket.getSourceAddress();
 					int metric = e.getMetric() + 1;
 					if (metric > MAX_COST) {
 						// set MAX_COST to be infinity
@@ -317,6 +321,8 @@ public class Router extends Device
 					Boolean foundEntry = false;
 					for (RIPv2Entry m : this.ripEntries) {
 						if ((m.getAddress() & m.getSubnetMask()) == subnet && m.getSubnetMask() == mask) {
+							// DEBUG
+							System.out.println("found a match!");
 							foundEntry = true;
 							// update the entry stored
 							if (m.getNextHopAddress() == nextHop) {
@@ -336,6 +342,8 @@ public class Router extends Device
 					if (!foundEntry) {
 						RIPv2Entry newEntry = new RIPv2Entry(subnet,nextHop, mask, metric);
 						this.ripEntries.add(newEntry);
+						// DEBUG
+						System.out.println("Didn't find a match!");
 						this.routeTable.insert(subnet, nextHop, mask, inIface);
 					}
 				}
