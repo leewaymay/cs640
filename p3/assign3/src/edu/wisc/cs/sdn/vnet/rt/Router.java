@@ -61,8 +61,7 @@ public class Router extends Device
 			// request rip
 			Ethernet etherPacket = preparePacket(false, "224.0.0.9", "FF:FF:FF:FF:FF:FF");
 			for (Iface iface : interfaces.values()) {
-				etherPacket.setSourceMACAddress(iface.getMacAddress().toString());
-				sendPacket(etherPacket, iface);
+				sendRipPacket(etherPacket, iface);
 			}
 		}
 	}
@@ -102,9 +101,15 @@ public class Router extends Device
 	private void requestRip() {
 		Ethernet etherPacket = preparePacket(true, "224.0.0.9", "FF:FF:FF:FF:FF:FF");
 		for (Iface iface : interfaces.values()) {
-			etherPacket.setSourceMACAddress(iface.getMacAddress().toString());
-			sendPacket(etherPacket, iface);
+			sendRipPacket(etherPacket, iface);
 		}
+	}
+
+	private void sendRipPacket(Ethernet etherPacket, Iface iface) {
+		etherPacket.setSourceMACAddress(iface.getMacAddress().toString());
+		IPv4 ipPacket = (IPv4) etherPacket.getPayload();
+		ipPacket.setSourceAddress(iface.getIpAddress());
+		sendPacket(etherPacket, iface);
 	}
 
 	private Ethernet preparePacket(Boolean isRequest, String destIp, String destMAC) {
@@ -295,8 +300,7 @@ public class Router extends Device
 			// DEBUG
 			System.out.println("received request from ip " + srcIp);
 			Ethernet replyPacket = preparePacket(false, srcIp, srcMAC);
-			replyPacket.setSourceMACAddress(inIface.getMacAddress().toString());
-			sendPacket(replyPacket, inIface);
+			sendRipPacket(replyPacket, inIface);
 		} else {
 			// handle response
 			List<RIPv2Entry> inEntries = ripPacket.getEntries();
