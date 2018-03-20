@@ -194,8 +194,7 @@ public class RouteTable
 	 * @param iface new router interface for matching entry
      * @return true if a matching entry was found and updated, otherwise false
 	 */
-	public boolean update(int dstIp, int maskIp, int gwIp, 
-            Iface iface)
+	public boolean update(int dstIp, int gwIp, int maskIp, Iface iface)
 	{
         synchronized(this.entries)
         {

@@ -21,7 +21,7 @@ public class RIPv2Entry
     public RIPv2Entry()
     { }
 
-    public RIPv2Entry(int address, int subnetMask, int nextHopAddress, int metric)
+    public RIPv2Entry(int address, int nextHopAddress, int subnetMask, int metric)
     {
         this.addressFamily = ADDRESS_FAMILY_IPv4;
         this.address = address;

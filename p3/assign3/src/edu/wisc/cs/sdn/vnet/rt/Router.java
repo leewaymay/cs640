@@ -317,6 +317,7 @@ public class Router extends Device
 					Boolean foundEntry = false;
 					for (RIPv2Entry m : this.ripEntries) {
 						if ((m.getAddress() & m.getSubnetMask()) == subnet && m.getSubnetMask() == mask) {
+							foundEntry = true;
 							// update the entry stored
 							if (m.getNextHopAddress() == nextHop) {
 								m.update();
@@ -326,15 +327,14 @@ public class Router extends Device
 									m.setNextHopAddress(nextHop);
 									m.setMetric(metric);
 									m.update();
-									routeTable.update(subnet, mask, nextHop, inIface);
+									routeTable.update(subnet, nextHop, mask, inIface);
 								}
 							}
-							foundEntry = true;
 							break;
 						}
 					}
 					if (!foundEntry) {
-						RIPv2Entry newEntry = new RIPv2Entry(subnet, mask, nextHop, metric);
+						RIPv2Entry newEntry = new RIPv2Entry(subnet,nextHop, mask, metric);
 						this.ripEntries.add(newEntry);
 						this.routeTable.insert(subnet, nextHop, mask, inIface);
 					}
