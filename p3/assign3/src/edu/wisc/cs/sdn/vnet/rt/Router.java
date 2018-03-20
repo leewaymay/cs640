@@ -89,8 +89,8 @@ public class Router extends Device
 				for (RIPv2Entry e : ripEntries) {
 					if ((System.currentTimeMillis() - e.getTimestamp()) > MAX_TIME) {
 						routeTable.remove((e.getAddress()&e.getSubnetMask()), e.getSubnetMask());
+						toRemove.add(e);
 					}
-					toRemove.add(e);
 				}
 				for (RIPv2Entry e : toRemove) {
 					// DEBUG
