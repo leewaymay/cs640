@@ -154,7 +154,7 @@ public class Router extends Device
 		// the router's interface
 		for (Iface iface : this.interfaces.values()) {
 			int subnet = iface.getSubnetMask() & iface.getIpAddress();
-			RIPv2Entry ripEntry = new RIPv2Entry(subnet, iface.getSubnetMask(), subnet, 1);
+			RIPv2Entry ripEntry = new RIPv2Entry(subnet, subnet, iface.getSubnetMask(), 1);
 			synchronized (this.ripStaticEntries) {
 				ripStaticEntries.add(ripEntry);
 			}
@@ -327,7 +327,7 @@ public class Router extends Device
 									m.setNextHopAddress(nextHop);
 									m.setMetric(metric);
 									m.update();
-									routeTable.update(subnet, nextHop, mask, inIface);
+									routeTable.update(subnet, mask, nextHop, inIface);
 								}
 							}
 							break;
