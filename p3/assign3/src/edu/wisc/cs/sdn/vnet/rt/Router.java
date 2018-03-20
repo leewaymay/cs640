@@ -293,7 +293,7 @@ public class Router extends Device
 			String srcIp = IPv4.fromIPv4Address(ipPacket.getSourceAddress());
 			String srcMAC = etherPacket.getSourceMAC().toString();
 			// DEBUG
-			System.out.println("received request from ip" + IPv4.fromIPv4Address(srcIp));
+			System.out.println("received request from ip " + srcIp);
 			Ethernet replyPacket = preparePacket(false, srcIp, srcMAC);
 			replyPacket.setSourceMACAddress(inIface.getMacAddress().toString());
 			sendPacket(replyPacket, inIface);
@@ -303,7 +303,7 @@ public class Router extends Device
 			// set nextHop to be the one who send the packet
 			int nextHop = ipPacket.getSourceAddress();
 			// DEBUG
-			System.out.println("received response from ip" + IPv4.fromIPv4Address(nextHop));
+			System.out.println("received response from ip " + IPv4.fromIPv4Address(nextHop));
 			synchronized (this.ripEntries) {
 				for (RIPv2Entry e : inEntries) {
 					int destIp = e.getAddress();
