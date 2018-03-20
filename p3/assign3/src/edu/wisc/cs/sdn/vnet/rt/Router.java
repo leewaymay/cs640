@@ -23,7 +23,6 @@ public class Router extends Device
 
 	/** RIP table learned from other routers*/
 	private List<RIPv2Entry> ripEntries;
-	private List< RIPv2Entry> ripStaticEntries;
 
 	private Thread ripResponder;
 
@@ -39,7 +38,6 @@ public class Router extends Device
 		this.routeTable = new RouteTable();
 		this.arpCache = new ArpCache();
 		this.ripEntries = new LinkedList<>();
-		this.ripStaticEntries = new LinkedList<>();
 		this.ripResponder = new Thread(new RipResponder());
 		this.ripCleaner = new Thread(new RipCleaner());
 	}
@@ -87,7 +85,7 @@ public class Router extends Device
 			synchronized (ripEntries) {
 				List<RIPv2Entry> toRemove = new LinkedList<>();
 				for (RIPv2Entry e : ripEntries) {
-					if ((System.currentTimeMillis() - e.getTimestamp()) > MAX_TIME) {
+					if (((System.currentTimeMillis() - e.getTimestamp()) > MAX_TIME) && !e.isPermenent()) {
 						routeTable.remove((e.getAddress()&e.getSubnetMask()), e.getSubnetMask());
 						toRemove.add(e);
 					}
@@ -125,13 +123,8 @@ public class Router extends Device
 			synchronized (this.ripEntries) {
 				ripEntryList.addAll(this.ripEntries);
 			}
-			synchronized (this.ripStaticEntries) {
-				ripEntryList.addAll(ripStaticEntries);
-			}
 			ripPacket.setEntries(ripEntryList);
 		}
-		// DEBUG
-		System.out.println("After preparing the RIP package, the rip entry length is " + ripEntries.size());
 		UDP udpPacket = new UDP();
 		ripPacket.setParent(udpPacket);
 		udpPacket.setPayload(ripPacket);
@@ -165,8 +158,9 @@ public class Router extends Device
 		for (Iface iface : this.interfaces.values()) {
 			int subnet = iface.getSubnetMask() & iface.getIpAddress();
 			RIPv2Entry ripEntry = new RIPv2Entry(subnet, subnet, iface.getSubnetMask(), 1);
-			synchronized (this.ripStaticEntries) {
-				ripStaticEntries.add(ripEntry);
+			ripEntry.setPermenent(true);
+			synchronized (this.ripEntries) {
+				ripEntries.add(ripEntry);
 			}
 			routeTable.insert(subnet,0, iface.getSubnetMask(),iface);
 		}
@@ -311,8 +305,6 @@ public class Router extends Device
 			List<RIPv2Entry> inEntries = ripPacket.getEntries();
 			// set nextHop to be the one who send the packet
 			int nextHop = ipPacket.getSourceAddress();
-			// DEBUG
-			System.out.println("received response from ip " + IPv4.fromIPv4Address(nextHop));
 			synchronized (this.ripEntries) {
 				for (RIPv2Entry e : inEntries) {
 					int destIp = e.getAddress();
@@ -329,9 +321,6 @@ public class Router extends Device
 					}
 					Boolean foundEntry = false;
 					for (RIPv2Entry m : this.ripEntries) {
-						System.out.println("Comparing rip entries");
-						System.out.println(m.toString());
-						System.out.println(e.toString());
 						if (((m.getAddress() & m.getSubnetMask()) == subnet) && (m.getSubnetMask() == mask)) {
 							// DEBUG
 							System.out.println("found a match!");

@@ -17,6 +17,7 @@ public class RIPv2Entry
 	protected int metric;
 	// Added by Wei
 	protected long timeUpdated;
+	protected boolean permenent;
 
     public RIPv2Entry()
     { }
@@ -29,6 +30,7 @@ public class RIPv2Entry
         this.nextHopAddress = nextHopAddress;
         this.metric = metric;
         this.timeUpdated = System.currentTimeMillis();
+        this.permenent = false;
     }
 
 	public String toString()
@@ -42,6 +44,14 @@ public class RIPv2Entry
 
     public short getAddressFamily()
     { return this.addressFamily; }
+
+    public boolean isPermenent() {
+    	return this.permenent;
+    }
+
+	public void setPermenent(boolean permenent) {
+		this.permenent = permenent;
+	}
 
     public void setAddressFamily(short addressFamily)
     { this.addressFamily = addressFamily; }
