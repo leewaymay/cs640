@@ -106,6 +106,9 @@ public class Router extends Device
 		IPv4 ipPacket = (IPv4) etherPacket.getPayload();
 		ipPacket.setSourceAddress(iface.getIpAddress());
 		sendPacket(etherPacket, iface);
+		// Debug
+		System.out.println("*** -> Sent RIP packet: " +
+				etherPacket.toString().replace("\n", "\n\t"));
 	}
 
 	private Ethernet preparePacket(Boolean isRequest, String destIp, String destMAC) {
@@ -239,7 +242,7 @@ public class Router extends Device
         System.out.println("Handle IP packet");
 
         // Check if it is a RIP packet
-		if (checkRIP(ipPacket)) {
+		if (checkRIP(ipPacket, inIface)) {
 			handleRipPacket(etherPacket, inIface);
 			return;
 		}
@@ -272,8 +275,9 @@ public class Router extends Device
         this.forwardIpPacket(etherPacket, inIface);
 	}
 
-	private Boolean checkRIP(IPv4 ipPacket) {
-		if (ipPacket.getDestinationAddress() == IPv4.toIPv4Address("224.0.0.9") &&
+	private Boolean checkRIP(IPv4 ipPacket, Iface inIface) {
+		if ((ipPacket.getDestinationAddress() == IPv4.toIPv4Address("224.0.0.9") ||
+				ipPacket.getDestinationAddress() == inIface.getIpAddress()) &&
 				ipPacket.getProtocol() == IPv4.PROTOCOL_UDP) {
 			UDP udpPacket = (UDP) ipPacket.getPayload();
 			return udpPacket.getDestinationPort() == UDP.RIP_PORT;
