@@ -155,7 +155,7 @@ public class Router extends Device
 		// the router's interface
 		for (Iface iface : this.interfaces.values()) {
 			int subnet = iface.getSubnetMask() & iface.getIpAddress();
-			RIPv2Entry ripEntry = new RIPv2Entry(subnet, subnet, iface.getSubnetMask(), 0);
+			RIPv2Entry ripEntry = new RIPv2Entry(subnet, 0, iface.getSubnetMask(), 0);
 			ripEntry.setPermenent(true);
 			synchronized (this.ripEntries) {
 				ripEntries.add(ripEntry);
@@ -239,13 +239,14 @@ public class Router extends Device
 		
 		// Get IP header
 		IPv4 ipPacket = (IPv4)etherPacket.getPayload();
-        System.out.println("Handle IP packet");
 
         // Check if it is a RIP packet
 		if (checkRIP(ipPacket, inIface)) {
 			handleRipPacket(etherPacket, inIface);
 			return;
 		}
+
+		System.out.println("Handle IP packet");
 
         // Verify checksum
         short origCksum = ipPacket.getChecksum();
