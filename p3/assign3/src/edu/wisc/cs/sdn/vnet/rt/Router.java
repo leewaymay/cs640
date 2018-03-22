@@ -105,10 +105,9 @@ public class Router extends Device
 		etherPacket.setSourceMACAddress(iface.getMacAddress().toString());
 		IPv4 ipPacket = (IPv4) etherPacket.getPayload();
 		ipPacket.setSourceAddress(iface.getIpAddress());
+		ipPacket.resetChecksum();
+		etherPacket.resetChecksum();
 		sendPacket(etherPacket, iface);
-		// Debug
-		System.out.println("*** -> Sent RIP packet: " +
-				etherPacket.toString().replace("\n", "\n\t"));
 	}
 
 	private Ethernet preparePacket(Boolean isRequest, String destIp, String destMAC) {
