@@ -328,20 +328,20 @@ public class Router extends Device
 							foundEntry = true;
 							// update the entry stored
 							if (m.getNextHopAddress() == nextHop) {
-								m.update();
+								if (metric < 16) m.update();
 								m.setMetric(metric);
 							} else {
 								if (m.getMetric() >= metric) {
 									m.setNextHopAddress(nextHop);
 									m.setMetric(metric);
-									m.update();
+									if (metric < 16) m.update();
 									this.routeTable.update(subnet, mask, nextHop, inIface);
 								}
 							}
 							break;
 						}
 					}
-					if (!foundEntry) {
+					if (!foundEntry && metric < 16) {
 						RIPv2Entry newEntry = new RIPv2Entry(subnet,nextHop, mask, metric);
 						this.ripEntries.add(newEntry);
 						this.routeTable.insert(subnet, nextHop, mask, inIface);
