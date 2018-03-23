@@ -329,10 +329,16 @@ public class Router extends Device
 					if ((inIface.getIpAddress() & mask) == subnet) {
 						continue;
 					}
+					//DEBUG
+					System.out.println("receive route entry: ");
+					System.out.println(e.toString());
 					Boolean foundEntry = false;
 					for (RIPv2Entry m : this.ripEntries) {
 						if (((m.getAddress() & m.getSubnetMask()) == subnet) && (m.getSubnetMask() == mask)) {
 							foundEntry = true;
+							// Debug
+							System.out.println("update route entry: ");
+							System.out.println(m.toString());
 							// update the entry stored
 							if (m.getNextHopAddress() == nextHop) {
 								if (metric < 16) m.update();
@@ -341,9 +347,6 @@ public class Router extends Device
 								if (m.getMetric() >= metric) {
 									m.setNextHopAddress(nextHop);
 									m.setMetric(metric);
-									// Debug
-									System.out.println("update route entry: ");
-									System.out.println(e.toString());
 									if (metric < 16) m.update();
 									this.routeTable.update(subnet, mask, nextHop, inIface);
 								}
