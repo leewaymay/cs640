@@ -110,7 +110,8 @@ public class Router extends Device
 	}
 
 	private void resetPacket(Ethernet etherPacket) {
-		//RIPv2 ripPacket = (RIPv2) etherPacket.getPayload().getPayload().getPayload();
+		RIPv2 ripPacket = (RIPv2) etherPacket.getPayload().getPayload().getPayload();
+		ripPacket.resetChecksum();
 		etherPacket.resetChecksum();
 		byte[] serialized = etherPacket.serialize();
 		etherPacket.deserialize(serialized, 0, serialized.length);
