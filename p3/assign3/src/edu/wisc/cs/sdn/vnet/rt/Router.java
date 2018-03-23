@@ -104,10 +104,17 @@ public class Router extends Device
 	private void sendRipPacket(Ethernet etherPacket, Iface iface) {
 		etherPacket.setSourceMACAddress(iface.getMacAddress().toString());
 		IPv4 ipPacket = (IPv4) etherPacket.getPayload();
+		resetPacket(etherPacket);
 		ipPacket.setSourceAddress(iface.getIpAddress());
-		ipPacket.resetChecksum();
-		etherPacket.resetChecksum();
+
 		sendPacket(etherPacket, iface);
+	}
+
+	private void resetPacket(Ethernet etherPacket) {
+		RIPv2 ripPacket = (RIPv2) etherPacket.getPayload().getPayload().getPayload();
+		ripPacket.resetChecksum();
+		byte[] serialized = etherPacket.serialize();
+		etherPacket.deserialize(serialized, 0, serialized.length);
 	}
 
 	private Ethernet preparePacket(Boolean isRequest, String destIp, String destMAC) {
