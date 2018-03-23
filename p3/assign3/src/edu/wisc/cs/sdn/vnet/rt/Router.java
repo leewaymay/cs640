@@ -87,8 +87,9 @@ public class Router extends Device
 				}
 				for (RIPv2Entry e : toRemove) {
 					// DEBUG
-					System.out.println("removed a time-out rip entry");
+					System.out.println("to remove a time-out rip entry");
 					ripEntries.remove(e);
+					System.out.println("removed a time-out rip entry");
 				}
 			}
 		}
