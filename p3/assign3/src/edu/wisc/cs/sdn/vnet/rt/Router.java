@@ -341,6 +341,9 @@ public class Router extends Device
 								if (m.getMetric() >= metric) {
 									m.setNextHopAddress(nextHop);
 									m.setMetric(metric);
+									// Debug
+									System.out.println("update route entry: ");
+									System.out.println(e.toString());
 									if (metric < 16) m.update();
 									this.routeTable.update(subnet, mask, nextHop, inIface);
 								}
