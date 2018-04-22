@@ -16,6 +16,7 @@ public class TCPReceiver {
 		// send request
 		byte[] buf = new byte[256];
 		InetAddress address = InetAddress.getByName(args[0]);
+		System.out.println("The host address is " + address.toString());
 		DatagramPacket packet = new DatagramPacket(buf, buf.length, address, 4445);
 		socket.send(packet);
 

@@ -37,8 +37,8 @@
       <file leaf-file-name="TCPReceiver.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/assign2_soln/TCPReceiver.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="414">
-              <caret line="23" column="31" lean-forward="false" selection-start-line="23" selection-start-column="31" selection-end-line="23" selection-end-column="31" />
+            <state relative-caret-position="324">
+              <caret line="18" column="72" lean-forward="false" selection-start-line="18" selection-start-column="72" selection-end-line="18" selection-end-column="72" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -59,15 +59,15 @@
         <option value="$PROJECT_DIR$/assign2_soln/TCPserver.java" />
         <option value="$PROJECT_DIR$/assign2_soln/one-liners.txt" />
         <option value="$PROJECT_DIR$/assign2_soln/TCPServerThread.java" />
-        <option value="$PROJECT_DIR$/assign2_soln/TCPReceiver.java" />
         <option value="$PROJECT_DIR$/assign2_soln/TCPSenderThread.java" />
         <option value="$PROJECT_DIR$/assign2_soln/TCPSender.java" />
         <option value="$PROJECT_DIR$/assign2_soln/Makefile" />
+        <option value="$PROJECT_DIR$/assign2_soln/TCPReceiver.java" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="2028" />
+    <option name="x" value="93" />
     <option name="y" value="-4" />
     <option name="width" value="1738" />
     <option name="height" value="1140" />
@@ -226,7 +226,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="1973" y="-4" width="1867" height="1204" extended-state="6" />
+    <frame x="53" y="-4" width="1867" height="1204" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
@@ -300,8 +300,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/assign2_soln/TCPReceiver.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="414">
-          <caret line="23" column="31" lean-forward="false" selection-start-line="23" selection-start-column="31" selection-end-line="23" selection-end-column="31" />
+        <state relative-caret-position="324">
+          <caret line="18" column="72" lean-forward="false" selection-start-line="18" selection-start-column="72" selection-end-line="18" selection-end-column="72" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>
