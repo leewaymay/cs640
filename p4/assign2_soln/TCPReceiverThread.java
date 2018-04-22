@@ -2,24 +2,29 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-public class TCPSenderThread extends Thread {
+public class TCPReceiverThread extends Thread {
 
 	protected DatagramSocket socket = null;
-	protected BufferedReader in = null;
+	protected BufferedReader out = null;
 	protected boolean moreQuotes = true;
 
-	public TCPSenderThread() throws IOException {
-		this("TCPSenderThread");
+	int port;
+	int mtu;
+	int sws;
+
+	public TCPReceiverThread(){
 	}
 
-	public TCPSenderThread(String name) throws IOException {
-		super(name);
-		socket = new DatagramSocket(4445);
+	public TCPReceiverThread(int port, int mtu, int sws){
+		socket = new DatagramSocket(port);
+		this.port = port;
+		this.mtu = mtu;
+		this.sws = sws;
 
 		try {
-			in = new BufferedReader(new FileReader("one-liners.txt"));
-		} catch (FileNotFoundException e) {
-			System.err.println("Could not open quote file. Serving time instead.");
+			out = new PrintWriter(new FileWriter("two-liners.txt"));
+		} catch (IOException e) {
+			System.err.println("Could not write to the file given the filename.");
 		}
 	}
 

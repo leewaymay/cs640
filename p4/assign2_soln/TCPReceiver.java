@@ -3,6 +3,19 @@ import java.net.*;
 import java.util.*;
 
 public class TCPReceiver {
+	int port;
+	int mtu;
+	int sws;
+	InetAddress address;
+	DatagramSocket socket = null;
+	DatagramPacket packet;
+
+	public TCPReceiver(int port, int mtu, int sws) {
+		this.port = port;
+		this.mtu = mtu;
+		this.sws = sws;
+	}
+
 	public static void main(String[] args) throws IOException {
 
 		if (args.length != 1) {
