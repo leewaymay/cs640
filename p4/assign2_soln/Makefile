@@ -1,12 +1,11 @@
-all: TCPSender.class TCPReceiver.class
-
-TCPSender.class: TCPSender.java TCPSenderThread.java
+all: TCPend.class
+TCPSenderThread.class: TCPSenderThread.java
 	javac TCPSenderThread.java
-	javac TCPSender.java
-TCPReceiver.class: TCPReceiver.java
-	javac TCPReceiver.java
-
+TCPReceiverThread.class: TCPReceiverThread.java
+	javac TCPReceiverThread.java
+TCPend.class: TCPend.java TCPSenderThread.class TCPReceiverThread.class
+	javac TCPend.java
 clean:
-	rm TCPSender.class
-	rm TCPReceiver.class
+	rm TCPend.class
+	rm TCPReceiverThread.class
 	rm TCPSenderThread.class
