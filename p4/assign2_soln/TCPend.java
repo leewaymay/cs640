@@ -13,7 +13,8 @@ public class TCPend {
 					int mtu = Integer.parseInt(args[9]);
 					int sws = Integer.parseInt(args[11]);
 					// start sender application
-					new TCPSenderThread().start();
+					TCPSenderThread sender = new TCPSenderThread(port, remote_IP, remote_port, filename, mtu, sws);
+					sender.start();
 				} catch (NumberFormatException e) {
 					System.err.println("Error in parsing argument into integers!");
 					System.err.println("port, remote_port, mtu and sws should be integers.");
