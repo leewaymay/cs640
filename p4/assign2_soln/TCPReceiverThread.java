@@ -41,6 +41,27 @@ public class TCPReceiverThread extends Thread {
 		} catch (Exception e) {
 			//do nothing
 		}
+		// receive the first SYN packet
+		while (true) {
+			TCPPacket tcpPacket = new TCPPacket(mtu);
+			byte[] buf = tcpPacket.serialize();
+			DatagramPacket packet = new DatagramPacket(buf, buf.length);
+			try {
+				socket.receive(packet);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.err.println("Error in receive a udp packet");
+			}
+			byte[] received = packet.getData();
+			tcpPacket.deserialize(received);
+			// TODO compute checksum
+			if (tcpPacket.isSYN()) {
+				System.out.println("received an SYN application!");
+				break;
+			} else {
+				System.out.println("received un undesired packet!");
+			}
+		}
 		// send request
 		byte[] buf = new byte[256];
 		InetAddress address = null;

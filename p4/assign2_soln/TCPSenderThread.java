@@ -1,6 +1,5 @@
 import java.io.*;
 import java.net.*;
-import java.nio.ByteBuffer;
 import java.util.*;
 
 public class TCPSenderThread extends Thread {
@@ -13,7 +12,6 @@ public class TCPSenderThread extends Thread {
 	private int sws;
 	private boolean moreData = true;
 	private int seq_num;
-	private static final int header_sz = 6*32;
 
 
 	public TCPSenderThread(int port, String remote_IP, int remote_port, String filename, int mtu, int sws)
@@ -41,6 +39,9 @@ public class TCPSenderThread extends Thread {
 	}
 
 	public void run() {
+		// start packet receiver thread
+		PacketReceiver packetReceiver = new PacketReceiver();
+		packetReceiver.start();
 
 		// build connection
 		connect_remote();
@@ -72,13 +73,13 @@ public class TCPSenderThread extends Thread {
 				moreData = false;
 			}
 		}
+		packetReceiver.interrupt();
 		socket.close();
 	}
 
 	private void connect_remote() {
-		byte[] buf = new byte[mtu];
-		ByteBuffer bb = ByteBuffer.wrap(buf);
-		prepareSegmentHeader(bb, 0, 0, 0, 1,0, 0);
+		TCPPacket seg = new TCPPacket(mtu, 0, 0, 1, 0, 0);
+		byte[] buf = seg.serialize();
 		DatagramPacket packet = new DatagramPacket(buf, buf.length, remote_address, remote_port);
 		try {
 			socket.send(packet);
@@ -88,20 +89,6 @@ public class TCPSenderThread extends Thread {
 		}
 	}
 
-	private void prepareSegmentHeader(ByteBuffer bb, int seq, int ack, int length, int SYS, int FIN, int ACK) {
-		bb.putInt(seq);
-		bb.putInt(ack);
-		bb.putLong(System.nanoTime());
-		int length_flags = length << 3 | SYS << 2 | FIN << 1 | ACK;
-		bb.putInt(length_flags);
-		bb.putShort((short)0);
-		short checksum = cal_checksum(bb);
-		bb.putShort(checksum);
-	}
-
-	private short cal_checksum(ByteBuffer bb) {
-		return (short)0;
-	}
 
 	private String getNextData() {
 		String returnValue = null;
@@ -115,5 +102,33 @@ public class TCPSenderThread extends Thread {
 			returnValue = "IOException occurred in server.";
 		}
 		return returnValue;
+	}
+
+	private class PacketReceiver extends Thread {
+		private TCPPacket tcpPacket = new TCPPacket(mtu);
+		private byte[] buf = tcpPacket.serialize();
+		private DatagramPacket packet = new DatagramPacket(buf, buf.length);
+
+		public void run() {
+			System.out.println("Start running packet receiver thread...");
+			while (!Thread.interrupted()) {
+				try {
+					socket.receive(packet);
+				} catch (IOException e) {
+					e.printStackTrace();
+					System.err.println("Error in receive a udp packet");
+				}
+				byte[] received = packet.getData();
+				tcpPacket.deserialize(received);
+				// TODO compute checksum
+				if (tcpPacket.isACK()) {
+					System.out.println("received an acknowledgement!");
+				} else {
+					System.out.println("received not an acknowledgement!");
+				}
+
+			}
+			System.out.println("Stop running packet receiver thread...");
+		}
 	}
 }
