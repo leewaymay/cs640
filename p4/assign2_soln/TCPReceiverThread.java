@@ -44,6 +44,7 @@ public class TCPReceiverThread extends Thread {
 		// receive the first SYN packet
 		while (true) {
 			TCPPacket tcpPacket = new TCPPacket(mtu);
+			//TODO Error Buffer excceded
 			byte[] buf = tcpPacket.serialize();
 			DatagramPacket packet = new DatagramPacket(buf, buf.length);
 			try {
