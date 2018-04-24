@@ -11,7 +11,7 @@ public class TCPSenderThread extends Thread {
 	private int remote_port;
 	private int mtu;
 	private int sws;
-	private boolean moreData;
+	private boolean moreData = true;
 	private int seq_num;
 	private static final int header_sz = 6*32;
 
@@ -33,6 +33,7 @@ public class TCPSenderThread extends Thread {
 		try {
 			in = new BufferedReader(new FileReader(filename));
 		} catch (FileNotFoundException e) {
+			moreData = false;
 			System.err.println("Could not open given file.");
 		}
 
