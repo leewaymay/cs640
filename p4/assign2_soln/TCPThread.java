@@ -79,7 +79,11 @@ public class TCPThread extends Thread {
 					e.printStackTrace();
 				}
 				seg.setStatus(TCPPacket.Status.Sent);
-				sentTCPs.put(seg.getSeq()+seg.getLength()+1, seg);
+				if (seg.getLength() == 0) {
+					sentTCPs.put(seg.getSeq()+1, seg);
+				} else {
+					sentTCPs.put(seg.getSeq()+seg.getLength(), seg);
+				}
 				long TO = getTO();
 				try {
 					Thread.sleep(TO/1000000);

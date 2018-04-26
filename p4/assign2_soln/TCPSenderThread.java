@@ -80,6 +80,10 @@ public class TCPSenderThread extends TCPThread {
 			try {
 				String dString = getNextData();
 				byte[] buf = dString.getBytes();
+				TCPPacket sent = new TCPPacket(mtu, seq_num, ack_num, 0, 0, 1);
+				sent.addData(buf);
+				seq_num += sent.getLength();
+				buf = sent.serialize();
 				// send the response to the client at "address" and "port"
 				DatagramPacket packet = new DatagramPacket(buf, buf.length, remote_address, remote_port);
 				socket.send(packet);
