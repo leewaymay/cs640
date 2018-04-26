@@ -1,5 +1,3 @@
-import com.sun.org.apache.xerces.internal.parsers.CachingParserPool;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
