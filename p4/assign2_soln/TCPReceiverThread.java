@@ -6,32 +6,33 @@ public class TCPReceiverThread extends Thread {
 
 	private static final int MAX_RESENT = 16;
 
-	protected DatagramSocket socket = null;
+	private DatagramSocket socket = null;
 	protected PrintWriter out = null;
 
-	private boolean connected = false;
-	private boolean closed = false;
-	private boolean receivedSYN = false;
-	private boolean receivedFIN = false;
-	private Long timeOUT = (long)5*1000*1000*1000;
+	private volatile boolean connected = false;
+	private volatile boolean closed = false;
+	private volatile boolean receivedSYN = false;
+	private volatile boolean receivedFIN = false;
+	private volatile long timeOUT = (long)5*1000*1000*1000;
 	private ConcurrentHashMap<Integer, TCPPacket> sentTCPs = new ConcurrentHashMap<>();
 
 	private IncomingMonitor incomingMonitor;
+	private InetAddress sender_address;
+	private int sender_port;
 
-	int port;
-	int mtu;
-	int sws;
+	private int port;
+	private int mtu;
+	private int sws;
 
-	private int seq_num = 0;
+	private volatile int seq_num = 0;
 
-	public TCPReceiverThread(){
-	}
 
 	public TCPReceiverThread(int port, int mtu, int sws){
 		try{
 			socket = new DatagramSocket(port);
 		} catch (Exception e) {
 			//do nothing
+			System.err.println("Error in building a TCP socket!");
 		}
 
 		this.port = port;
@@ -48,8 +49,7 @@ public class TCPReceiverThread extends Thread {
 	}
 
 	public void run() {
-		String hostname = "10.0.1.101";
-		// get a datagram socket
+
 		try{
 			socket = new DatagramSocket(port);
 		} catch (Exception e) {
@@ -59,33 +59,31 @@ public class TCPReceiverThread extends Thread {
 		// Start incoming monitor
 		incomingMonitor.start();
 
-		// send request
-		byte[] buf = new byte[256];
-		InetAddress address = null;
-		try {
-			address = InetAddress.getByName(hostname);
-			System.out.println("The host address is " + address.toString());
-		} catch (Exception e) {
-			// do nothing
-		}
-		DatagramPacket packet = new DatagramPacket(buf, buf.length, address, 4445);
-		try {
-			socket.send(packet);
-		} catch (IOException e) {
-			// do nothing
-		}
+		System.out.println("wait for TCP connect to close.");
 
-		// get response
-		packet = new DatagramPacket(buf, buf.length);
-		try {
-			socket.receive(packet);
-		} catch (IOException e){
-			// do nothing
-		}
+		if (connected) {
+			// send request
+			byte[] buf = new byte[256];
 
-		// display response
-		String received = new String(packet.getData(), 0, packet.getLength());
-		System.out.println("Quote of the Moment: " + received);
+			DatagramPacket packet = new DatagramPacket(buf, buf.length, sender_address, sender_port);
+			try {
+				socket.send(packet);
+			} catch (IOException e) {
+				// do nothing
+			}
+
+			// get response
+			packet = new DatagramPacket(buf, buf.length);
+			try {
+				socket.receive(packet);
+			} catch (IOException e){
+				// do nothing
+			}
+
+			// display response
+			String received = new String(packet.getData(), 0, packet.getLength());
+			System.out.println("Quote of the Moment: " + received);
+		}
 
 		socket.close();
 	}
@@ -151,6 +149,8 @@ public class TCPReceiverThread extends Thread {
 			} else {
 				if (seg.isSYN()) {
 					connected = true;
+					sender_address = out_address;
+					sender_port = out_port;
 				} else if (seg.isFIN()) {
 					closed = true;
 					// close the incoming monitor
@@ -160,12 +160,8 @@ public class TCPReceiverThread extends Thread {
 		}
 	}
 
-	private long getTO() {
-		long TO;
-		synchronized (timeOUT) {
-			TO = timeOUT;
-		}
-		return TO;
+	private synchronized long getTO() {
+		return timeOUT;
 	}
 
 	private class IncomingMonitor extends Thread {
@@ -199,7 +195,7 @@ public class TCPReceiverThread extends Thread {
 					System.out.println("received an SYN application!");
 					receivedSYN = true;
 					System.out.println("sending an ACK for SYN!");
-					safeSend(tcpPacket.getSeq()+1, 1, 0, 0, packet.getAddress(), packet.getPort());
+					safeSend(tcpPacket.getSeq()+1, 1, 0, 1, packet.getAddress(), packet.getPort());
 				} else if (tcpPacket.isFIN()) {
 					System.out.println("received an FIN application!");
 					receivedFIN = true;
@@ -211,7 +207,13 @@ public class TCPReceiverThread extends Thread {
 				} else {
 					System.out.println("Received a package unhandled!");
 				}
-				// TODO when receivedSYN and packet has data, record data now
+				// when receivedSYN and packet has data, record data now
+				if (receivedSYN && tcpPacket.isACK() && tcpPacket.getAck() == (seq_num+1) && tcpPacket.getLength() > 0) {
+					byte[] data = tcpPacket.getData();
+					String s = new String(data,0, tcpPacket.getLength());
+					// TODO keep a buffered window and write to text
+					System.out.println(s);
+				}
 			}
 			System.out.println("Stop running packet receiver thread...");
 		}

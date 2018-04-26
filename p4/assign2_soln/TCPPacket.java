@@ -58,6 +58,10 @@ public class TCPPacket {
 		return this.timeStamp;
 	}
 
+	public int getLength() {
+		return this.length;
+	}
+
 	public int getSeq() {
 		return this.seq;
 	}
