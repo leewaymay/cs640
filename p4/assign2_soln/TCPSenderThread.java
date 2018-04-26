@@ -7,6 +7,7 @@ public class TCPSenderThread extends TCPThread {
 	private BufferedReader in = null;
 	private boolean moreData = true;
 	private String filename = null;
+	protected DataSender dataSender;
 
 	public TCPSenderThread(int port, String remote_IP, int remote_port, String filename, int mtu, int sws) {
 		this.port = port;
@@ -36,6 +37,7 @@ public class TCPSenderThread extends TCPThread {
 
 		this.seq_num = 0;
 		this.incomingMonitor = new IncomingMonitor();
+		this.dataSender = new DataSender();
 	}
 
 	@Override
@@ -70,37 +72,44 @@ public class TCPSenderThread extends TCPThread {
 
 	@Override
 	protected void sendData() {
-		// send the filename
-		sendFilename();
+		dataSender.start();
+	}
 
-		// TODO send data to the receiver through safe sender
-		// use CWND and slow start to control the number of packages
-		// use buffer window size to control the flow
-		while (moreData) {
-			try {
-				String dString = getNextData();
-				byte[] buf = dString.getBytes();
-				TCPPacket sent = new TCPPacket(mtu, seq_num, ack_num, 0, 0, 1);
-				sent.addData(buf);
-				seq_num += sent.getLength();
-				buf = sent.serialize();
-				// send the response to the client at "address" and "port"
-				DatagramPacket packet = new DatagramPacket(buf, buf.length, remote_address, remote_port);
-				System.out.println("Sending a data of size " + sent.getLength());
-				System.out.println(sent.print_msg());
-				socket.send(packet);
+	protected class DataSender extends Thread {
+
+		public void run() {
+			// send the filename
+			sendFilename();
+
+			// TODO send data to the receiver through safe sender
+			// use CWND and slow start to control the number of packages
+			// use buffer window size to control the flow
+			while (moreData) {
 				try {
-					Thread.sleep(1*1000);
-				} catch (InterruptedException e) {
+					String dString = getNextData();
+					byte[] buf = dString.getBytes();
+					TCPPacket sent = new TCPPacket(mtu, seq_num, ack_num, 0, 0, 1);
+					sent.addData(buf);
+					seq_num += sent.getLength();
+					buf = sent.serialize();
+					// send the response to the client at "address" and "port"
+					DatagramPacket packet = new DatagramPacket(buf, buf.length, remote_address, remote_port);
+					System.out.println("Sending a data of size " + sent.getLength());
+					System.out.println(sent.print_msg());
+					socket.send(packet);
+					try {
+						Thread.sleep(1*1000);
+					} catch (InterruptedException e) {
 
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+					moreData = false;
 				}
-			} catch (IOException e) {
-				e.printStackTrace();
-				moreData = false;
 			}
+			// when finished sending data, send FIN to close the transfer
+			startClose();
 		}
-		// when finished sending data, send FIN to close the transfer
-		startClose();
 	}
 
 	private void sendFilename() {

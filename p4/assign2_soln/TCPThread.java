@@ -21,6 +21,7 @@ public class TCPThread extends Thread {
 	protected int sws;
 	protected volatile int seq_num = 0;
 	protected volatile int ack_num = 0;
+
 	
 	public void run() {
 		// do nothing
@@ -150,6 +151,7 @@ public class TCPThread extends Thread {
 				}
 				byte[] received = packet.getData();
 				tcpPacket.deserialize(received);
+				System.out.println("received a tcp seg \n" + tcpPacket.print_msg());
 				// TODO compute checksum
 				if (tcpPacket.isACK() && (System.nanoTime()-tcpPacket.getTimeStamp()) <= getTO()) {
 					System.out.println("received an acknowledgement!");
@@ -159,7 +161,7 @@ public class TCPThread extends Thread {
 						TCPPacket sent = sentTCPs.get(tcpPacket.getAck());
 						sent.setStatus(TCPPacket.Status.Ack);
 					}
-					if (tcpPacket.isSYN()) {
+					if (tcpPacket.isSYN() && !connected) {
 						System.out.println("received an SYN+ACK!");
 						receivedSYN = true;
 						connected = true;
