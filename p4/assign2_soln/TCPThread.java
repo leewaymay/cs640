@@ -9,7 +9,7 @@ public class TCPThread extends Thread {
 	protected volatile boolean receivedFIN = false;
 	protected static final int MAX_RESENT = 16;
 
-	protected volatile long timeOUT = (long)5*1000*1000*1000;
+	protected volatile long timeOUT = (long)30*1000*1000*1000;
 	protected ConcurrentHashMap<Integer, TCPPacket> sentTCPs = new ConcurrentHashMap<>();
 	protected IncomingMonitor incomingMonitor;
 
