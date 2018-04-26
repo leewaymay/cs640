@@ -52,10 +52,8 @@ public class TCPThread extends Thread {
 	}
 
 	protected void recordData(TCPPacket tcpPacket) {
-		byte[] data = tcpPacket.getData();
-		String s = new String(data,0, tcpPacket.getLength());
-		// TODO keep a buffered window and write to text, implement it in child class
-		System.out.println(s);
+		// do nothing
+		System.out.println("TCP thread for receiving data, should be implemented in child class!");
 	}
 
 	protected class SafeSender extends Thread {
@@ -106,11 +104,7 @@ public class TCPThread extends Thread {
 					remote_port = out_port;
 				} else if (seg.isFIN()) {
 					closed = true;
-					// close the incoming monitor
-					incomingMonitor.interrupt();
-
-					System.out.println("closing connection!");
-					socket.close();
+					close_connection();
 				}
 			}
 		}
@@ -118,6 +112,19 @@ public class TCPThread extends Thread {
 
 	protected long getTO() {
 		return timeOUT;
+	}
+
+	protected void close_connection() {
+		customize_close();
+		// close the incoming monitor
+		incomingMonitor.interrupt();
+
+		System.out.println("closing connection!");
+		socket.close();
+	}
+
+	protected void customize_close() {
+
 	}
 
 	protected class IncomingMonitor extends Thread {
