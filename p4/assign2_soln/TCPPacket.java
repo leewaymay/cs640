@@ -25,7 +25,7 @@ public class TCPPacket {
 		this.SYN = SYN;
 		this.FIN = FIN;
 		this.ACK = ACK;
-		if (mtu > header_sz) {
+		if (mtu < header_sz) {
 			System.out.println("mtu is too small to fit a TCP header!");
 		}
 	}
@@ -87,8 +87,8 @@ public class TCPPacket {
 		this.timeStamp = bb.getLong();
 		int length_flags = bb.getInt();
 		this.length = length_flags >>> 3;
-		this.SYN = length_flags & (1 << 2);
-		this.FIN = length_flags & (1 << 1);
+		this.SYN = length_flags >>> 2 & 1;
+		this.FIN = length_flags >>> 1 & 1;
 		this.ACK = length_flags & 1;
 		short all_zeros = bb.getShort();
 		this.checksum = bb.getShort();
