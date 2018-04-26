@@ -79,7 +79,7 @@ public class TCPThread extends Thread {
 					e.printStackTrace();
 				}
 				seg.setStatus(TCPPacket.Status.Sent);
-				sentTCPs.put(seg.getSeq(), seg);
+				sentTCPs.put(seg.getSeq()+seg.getLength()+1, seg);
 				long TO = getTO();
 				try {
 					Thread.sleep(TO/1000000);
@@ -149,8 +149,8 @@ public class TCPThread extends Thread {
 					System.out.println("received an acknowledgement!");
 					// lookup sent TCPs
 					// we assume the ack is 1+sent_tcp_seq
-					if (sentTCPs.containsKey(tcpPacket.getAck() - 1)) {
-						TCPPacket sent = sentTCPs.get(tcpPacket.getSeq());
+					if (sentTCPs.containsKey(tcpPacket.getAck())) {
+						TCPPacket sent = sentTCPs.get(tcpPacket.getAck());
 						sent.setStatus(TCPPacket.Status.Ack);
 					}
 					if (tcpPacket.isSYN()) {
