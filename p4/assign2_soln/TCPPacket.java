@@ -16,7 +16,7 @@ public class TCPPacket {
 	private int SYN = 0;
 	private int FIN = 0;
 	private int ACK = 0;
-	private static final int header_sz = 6*32;
+	private static final int header_sz = 6*4;
 	private byte[] data = new byte[0];
 	private short checksum = 0;
 	private int mtu = 0;

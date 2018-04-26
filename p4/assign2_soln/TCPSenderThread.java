@@ -2,22 +2,19 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-public class TCPSenderThread extends Thread {
+public class TCPSenderThread extends TCPThread {
 
-	private DatagramSocket socket;
 	private BufferedReader in = null;
-	private InetAddress remote_address = null;
-	private int remote_port;
-	private int mtu;
-	private int sws;
 	private boolean moreData = true;
-	private int seq_num;
 
-
-	public TCPSenderThread(int port, String remote_IP, int remote_port, String filename, int mtu, int sws)
-			throws IOException {
-
-		socket = new DatagramSocket(port);
+	public TCPSenderThread(int port, String remote_IP, int remote_port, String filename, int mtu, int sws) {
+		this.port = port;
+		try{
+			socket = new DatagramSocket(port);
+		} catch (Exception e) {
+			//do nothing
+			System.err.println("Error in building a TCP socket!");
+		}
 		try {
 			remote_address = InetAddress.getByName(remote_IP);
 			System.out.println("The host address is " + remote_address.toString());
@@ -36,59 +33,20 @@ public class TCPSenderThread extends Thread {
 		}
 
 		this.seq_num = 0;
+		this.incomingMonitor = new IncomingMonitor();
 	}
 
 	public void run() {
 		// start packet receiver thread
-		PacketReceiver packetReceiver = new PacketReceiver();
-		packetReceiver.start();
-
+		incomingMonitor.start();
 		// build connection
 		connect_remote();
-
-		while (moreData) {
-			try {
-				byte[] buf = new byte[256];
-
-				// receive request
-				DatagramPacket packet = new DatagramPacket(buf, buf.length);
-				socket.receive(packet);
-
-				// figure out response
-				String dString = null;
-				if (in == null)
-					dString = new Date().toString();
-				else
-					dString = getNextData();
-
-				buf = dString.getBytes();
-
-				// send the response to the client at "address" and "port"
-				InetAddress address = packet.getAddress();
-				int port = packet.getPort();
-				packet = new DatagramPacket(buf, buf.length, address, port);
-				socket.send(packet);
-			} catch (IOException e) {
-				e.printStackTrace();
-				moreData = false;
-			}
-		}
-		packetReceiver.interrupt();
-		socket.close();
 	}
 
 	private void connect_remote() {
-		TCPPacket seg = new TCPPacket(mtu, 0, 0, 1, 0, 0);
-		byte[] buf = seg.serialize();
-		DatagramPacket packet = new DatagramPacket(buf, buf.length, remote_address, remote_port);
-		try {
-			socket.send(packet);
-		} catch (IOException e) {
-			e.printStackTrace();
-			moreData = false;
-		}
+		System.out.println("sending a SYN to connect!");
+		safeSend(1, 0, 0, remote_address, remote_port);
 	}
-
 
 	private String getNextData() {
 		String returnValue = null;
@@ -104,31 +62,44 @@ public class TCPSenderThread extends Thread {
 		return returnValue;
 	}
 
-	private class PacketReceiver extends Thread {
-		private TCPPacket tcpPacket = new TCPPacket(mtu);
-		private byte[] buf = tcpPacket.serialize();
-		private DatagramPacket packet = new DatagramPacket(buf, buf.length);
+	@Override
+	protected void sendData() {
+		// TODO send data to the receiver through safe sender
+		// use CWND and slow start to control the number of packages
+		// use buffer window size to control the flow
+		while (moreData) {
+			try {
+				String dString = null;
+				if (in == null)
+					dString = new Date().toString();
+				else
+					dString = getNextData();
 
-		public void run() {
-			System.out.println("Start running packet receiver thread...");
-			while (!Thread.interrupted()) {
-				try {
-					socket.receive(packet);
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.err.println("Error in receive a udp packet");
-				}
-				byte[] received = packet.getData();
-				tcpPacket.deserialize(received);
-				// TODO compute checksum
-				if (tcpPacket.isACK()) {
-					System.out.println("received an acknowledgement!");
-				} else {
-					System.out.println("received not an acknowledgement!");
-				}
+				byte[] buf = dString.getBytes();
 
+				// send the response to the client at "address" and "port"
+
+				DatagramPacket packet = new DatagramPacket(buf, buf.length, remote_address, remote_port);
+				socket.send(packet);
+			} catch (IOException e) {
+				e.printStackTrace();
+				moreData = false;
 			}
-			System.out.println("Stop running packet receiver thread...");
 		}
+		// when finished sending data, send FIN to close the transfer
+		close_connection();
+	}
+
+	private void close_connection() {
+		System.out.println("sending a FIN to close!");
+		safeSend(0, 1, 0, remote_address, remote_port);
+	}
+
+	private void safeSendData(int SYN, int FIN, int ACK, InetAddress address, int port, byte[] data) {
+		TCPPacket seg = new TCPPacket(mtu, seq_num, ack_num, SYN, FIN, ACK);
+		seg.addData(data);
+		seq_num += data.length;
+		SafeSender sender = new SafeSender(seg, address, port);
+		sender.start();
 	}
 }
