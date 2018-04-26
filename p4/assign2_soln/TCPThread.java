@@ -26,9 +26,9 @@ public class TCPThread extends Thread {
 		// do nothing
 	}
 
-	protected void sendAck(InetAddress address, int port) {
+	protected void sendAck(TCPPacket tcpPacket, InetAddress address, int port) {
 		TCPPacket seg = new TCPPacket(mtu, seq_num, ack_num, 0, 0, 1);
-		byte[] buf = seg.serialize();
+		byte[] buf = seg.serialize(tcpPacket.getTimeStamp());
 		DatagramPacket out_packet = new DatagramPacket(buf, buf.length, address, port);
 		try {
 			socket.send(out_packet);
@@ -160,7 +160,7 @@ public class TCPThread extends Thread {
 						System.out.println("sending an ACK for SYN+ACK!");
 						// set ack_num to received packet seq_num + 1
 						ack_num = tcpPacket.getSeq() + 1;
-						sendAck(packet.getAddress(), packet.getPort());
+						sendAck(tcpPacket, packet.getAddress(), packet.getPort());
 						// have set up the connection, can send data now.
 						sendData();
 					}
@@ -175,14 +175,14 @@ public class TCPThread extends Thread {
 					receivedFIN = true;
 					System.out.println("sending an ACK for FIN!");
 					ack_num = tcpPacket.getSeq() + 1;
-					sendAck(packet.getAddress(), packet.getPort());
+					sendAck(tcpPacket, packet.getAddress(), packet.getPort());
 					// No data to sent, send FIN back
 					safeSend(0, 1, 0, packet.getAddress(), packet.getPort());
 				} else {
 					System.out.println("Received a package unhandled!");
 				}
 				// when receivedSYN and packet has data, record data now
-				if (receivedSYN && tcpPacket.isACK() && tcpPacket.getAck() == (seq_num+1) && tcpPacket.getLength() > 0) {
+				if (receivedSYN && tcpPacket.isACK() && tcpPacket.getLength() > 0) {
 					recordData(tcpPacket);
 				}
 			}

@@ -91,12 +91,15 @@ public class TCPPacket {
 	}
 
 	public byte[] serialize() {
+		return serialize(System.nanoTime());
+	}
+
+	public byte[] serialize(long segTimeStamp) {
 		byte[] tcp_seg = new byte[mtu];
 		ByteBuffer bb = ByteBuffer.wrap(tcp_seg);
-
 		bb.putInt(seq);
 		bb.putInt(ack);
-		bb.putLong(System.nanoTime());
+		bb.putLong(segTimeStamp);
 		int length_flags = length << 3 | SYN << 2 | FIN << 1 | ACK;
 		bb.putInt(length_flags);
 		bb.putShort((short)0);
