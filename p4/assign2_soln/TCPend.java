@@ -12,6 +12,10 @@ public class TCPend {
 					String filename = args[7];
 					int mtu = Integer.parseInt(args[9]);
 					int sws = Integer.parseInt(args[11]);
+					if (!check_argument(port, mtu, sws)) {
+						System.out.println("Check the range of port, mtu or sws");
+						return;
+					}
 					// start sender application
 					TCPSenderThread sender = new TCPSenderThread(port, remote_IP, remote_port, filename, mtu, sws);
 					sender.start();
@@ -30,8 +34,13 @@ public class TCPend {
 					int port = Integer.parseInt(args[1]);
 					int mtu = Integer.parseInt(args[3]);
 					int sws = Integer.parseInt(args[5]);
+					if (!check_argument(port, mtu, sws)) {
+						System.out.println("Check the range of port, mtu or sws");
+						return;
+					}
 					// start sender application
-					new TCPReceiverThread().start();
+					TCPReceiverThread receiverThread = new TCPReceiverThread(port, mtu, sws);
+					receiverThread.start();
 				} catch (NumberFormatException e) {
 					System.err.println("Error in parsing argument into integers!");
 					System.err.println("port, mtu and sws should be integers.");
@@ -51,5 +60,9 @@ public class TCPend {
 		System.err.println("or at the receiver side:");
 		System.err.println("java TCPend -p <port> -m <mtu> -c <sws>");
 		System.exit(0);
+	}
+
+	private static boolean check_argument(int port, int mtu, int sws) {
+		return true;
 	}
 }

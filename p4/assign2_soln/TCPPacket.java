@@ -25,6 +25,9 @@ public class TCPPacket {
 		this.SYN = SYN;
 		this.FIN = FIN;
 		this.ACK = ACK;
+		if (mtu > header_sz) {
+			System.out.println("mtu is too small to fit a TCP header!");
+		}
 	}
 
 	public void addData(byte[] data) {
@@ -42,23 +45,23 @@ public class TCPPacket {
 	}
 
 	public long getTimeStamp() {
-		return timeStamp;
+		return this.timeStamp;
 	}
 
 	public int getSeq() {
-		return seq;
+		return this.seq;
 	}
 
 	public boolean isSYN() {
-		return SYN == 1;
+		return this.SYN == 1;
 	}
 
 	public boolean isFIN() {
-		return FIN == 1;
+		return this.FIN == 1;
 	}
 
 	public boolean isACK() {
-		return ACK == 1;
+		return this.ACK == 1;
 	}
 
 	public byte[] serialize() {
