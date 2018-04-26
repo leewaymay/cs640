@@ -86,6 +86,8 @@ public class TCPSenderThread extends TCPThread {
 				buf = sent.serialize();
 				// send the response to the client at "address" and "port"
 				DatagramPacket packet = new DatagramPacket(buf, buf.length, remote_address, remote_port);
+				System.out.println("Sending a data of size " + sent.getLength());
+				System.out.println(sent.print_msg());
 				socket.send(packet);
 				try {
 					Thread.sleep(1*1000);

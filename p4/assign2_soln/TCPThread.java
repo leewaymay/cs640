@@ -35,6 +35,7 @@ public class TCPThread extends Thread {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		System.out.println("Send a acknowledge segment \n");
 	}
 
 	protected void safeSend(int SYN, int FIN, int ACK, InetAddress address, int port) {
@@ -44,6 +45,7 @@ public class TCPThread extends Thread {
 		}
 		SafeSender sender = new SafeSender(seg, address, port);
 		sender.start();
+		System.out.println("Send a segment \n" + seg.print_msg());
 	}
 
 	protected void sendData() {
