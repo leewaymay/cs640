@@ -61,6 +61,10 @@ public class TCPReceiverThread extends Thread {
 
 		System.out.println("wait for TCP connect to close.");
 
+		while (!connected) {
+			//wait
+		}
+
 		if (connected) {
 			// send request
 			byte[] buf = new byte[256];
