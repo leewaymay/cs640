@@ -1,7 +1,16 @@
+import com.sun.org.apache.xerces.internal.parsers.CachingParserPool;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class TCPPacket {
+
+	public enum Status {
+		Default, Sent, Ack, Lost
+	}
+
+
+
 	private int seq = 0;
 	private int ack = 0;
 	private long timeStamp = 0;
@@ -13,6 +22,7 @@ public class TCPPacket {
 	private byte[] data = new byte[0];
 	private short checksum = 0;
 	private int mtu = 0;
+	private Status status = Status.Default;
 
 	public TCPPacket(int mtu) {
 		this.mtu = mtu;
@@ -52,6 +62,10 @@ public class TCPPacket {
 		return this.seq;
 	}
 
+	public int getAck() {
+		return this.ack;
+	}
+
 	public boolean isSYN() {
 		return this.SYN == 1;
 	}
@@ -62,6 +76,16 @@ public class TCPPacket {
 
 	public boolean isACK() {
 		return this.ACK == 1;
+	}
+
+	public void setStatus(Status s) {
+		synchronized (this.status) {
+			this.status = s;
+		}
+	}
+
+	public Status getStatus() {
+		return this.status;
 	}
 
 	public byte[] serialize() {
@@ -93,10 +117,15 @@ public class TCPPacket {
 		short all_zeros = bb.getShort();
 		this.checksum = bb.getShort();
 		this.data = Arrays.copyOfRange(tcp_seg, bb.position(), bb.limit());
+		this.mtu = tcp_seg.length;
 		return this;
 	}
 
 	private void cal_checksum(ByteBuffer bb) {
 		this.checksum = (short)0;
+	}
+
+	public String print_msg() {
+		return String.format("seq:%d, ack=%d, SYN:%d, FIN:%d, ACK:%d", seq, ack, SYN, FIN, ACK);
 	}
 }
