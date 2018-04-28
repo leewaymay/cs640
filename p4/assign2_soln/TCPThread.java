@@ -181,6 +181,8 @@ public class TCPThread extends Thread {
 						// when receivedSYN and packet has data, record data now
 						if (receivedSYN && tcpPacket.getLength() > 0) {
 							System.out.println("received an data segment!");
+							ack_num = tcpPacket.getSeq() + tcpPacket.getLength();
+							sendAck(tcpPacket, packet.getAddress(), packet.getPort());
 							recordData(tcpPacket);
 						}
 					} else if (tcpPacket.isSYN()){
