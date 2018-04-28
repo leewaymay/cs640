@@ -22,6 +22,8 @@ public class TCPPacket {
 	private int mtu = 0;
 	private Status status = Status.Default;
 
+	private volatile int ack_times = 0;
+
 	public TCPPacket(int mtu) {
 		this.mtu = mtu;
 	}
@@ -46,6 +48,11 @@ public class TCPPacket {
 			this.data = data.clone();
 			this.length = data.length;
 		}
+	}
+
+	public int increaseAckTimes() {
+		this.ack_times++;
+		return this.ack_times;
 	}
 
 	public byte[] getData() {
