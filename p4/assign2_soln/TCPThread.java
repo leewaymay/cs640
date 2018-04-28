@@ -188,6 +188,7 @@ public class TCPThread extends Thread {
 					} else if (tcpPacket.isSYN()){
 						System.out.println("received an SYN application!");
 						receivedSYN = true;
+						ack_num = tcpPacket.getSeq() + 1;
 						System.out.println("sending an ACK+SYN for SYN!");
 						safeSend(1, 0, 1, packet.getAddress(), packet.getPort());
 					} else if (tcpPacket.isFIN()) {
