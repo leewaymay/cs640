@@ -69,5 +69,6 @@ public class TCPReceiverThread extends TCPThread {
 		String s = new String(data,0, tcpPacket.getLength());
 		// TODO keep a buffered window and write to text, implement it in child class
 		System.out.println(s);
+		ack_num = tcpPacket.getSeq() + tcpPacket.getLength();
 	}
 }
