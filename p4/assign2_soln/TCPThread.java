@@ -152,46 +152,53 @@ public class TCPThread extends Thread {
 				byte[] received = packet.getData();
 				tcpPacket.deserialize(received);
 				System.out.println("received a tcp seg \n" + tcpPacket.print_msg());
-				// TODO compute checksum
-				if (tcpPacket.isACK() && (System.nanoTime()-tcpPacket.getTimeStamp()) <= getTO()) {
-					System.out.println("received an acknowledgement!");
-					// lookup sent TCPs
-					// we assume the ack is 1+sent_tcp_seq
-					if (sentTCPs.containsKey(tcpPacket.getAck())) {
-						TCPPacket sent = sentTCPs.get(tcpPacket.getAck());
-						sent.setStatus(TCPPacket.Status.Ack);
-					}
-					if (tcpPacket.isSYN() && !connected) {
-						System.out.println("received an SYN+ACK!");
+				// TODO compute checksum and timeout
+				if (true) {
+					//TODO update timeout
+					if (tcpPacket.isACK()) {
+						if (tcpPacket.getLength() == 0 && !tcpPacket.isSYN() && !tcpPacket.isFIN()) {
+							System.out.println("received an acknowledgement!");
+						}
+						// lookup sent TCPs
+						if (sentTCPs.containsKey(tcpPacket.getAck())) {
+							System.out.println("received an acknowledgement for a sent tcp packet!");
+							TCPPacket sent = sentTCPs.get(tcpPacket.getAck());
+							sent.setStatus(TCPPacket.Status.Ack);
+						}
+
+						if (tcpPacket.isSYN() && !connected) {
+							System.out.println("received an SYN+ACK!");
+							receivedSYN = true;
+							connected = true;
+							System.out.println("sending an ACK for SYN+ACK!");
+							// set ack_num to received packet seq_num + 1
+							ack_num = tcpPacket.getSeq() + 1;
+							sendAck(tcpPacket, packet.getAddress(), packet.getPort());
+							// have set up the connection, can send data now.
+							sendData();
+						}
+
+						// when receivedSYN and packet has data, record data now
+						if (receivedSYN && tcpPacket.getLength() > 0) {
+							System.out.println("received an data segment!");
+							recordData(tcpPacket);
+						}
+					} else if (tcpPacket.isSYN()){
+						System.out.println("received an SYN application!");
 						receivedSYN = true;
-						connected = true;
-						System.out.println("sending an ACK for SYN+ACK!");
-						// set ack_num to received packet seq_num + 1
+						System.out.println("sending an ACK+SYN for SYN!");
+						safeSend(1, 0, 1, packet.getAddress(), packet.getPort());
+					} else if (tcpPacket.isFIN()) {
+						System.out.println("received an FIN application!");
+						receivedFIN = true;
+						System.out.println("sending an ACK for FIN!");
 						ack_num = tcpPacket.getSeq() + 1;
 						sendAck(tcpPacket, packet.getAddress(), packet.getPort());
-						// have set up the connection, can send data now.
-						sendData();
+						// No data to sent, send FIN back
+						safeSend(0, 1, 0, packet.getAddress(), packet.getPort());
+					} else {
+						System.out.println("Received a package unhandled!");
 					}
-					//TODO update timeout
-				} else if (tcpPacket.isSYN()){
-					System.out.println("received an SYN application!");
-					receivedSYN = true;
-					System.out.println("sending an ACK+SYN for SYN!");
-					safeSend(1, 0, 1, packet.getAddress(), packet.getPort());
-				} else if (tcpPacket.isFIN()) {
-					System.out.println("received an FIN application!");
-					receivedFIN = true;
-					System.out.println("sending an ACK for FIN!");
-					ack_num = tcpPacket.getSeq() + 1;
-					sendAck(tcpPacket, packet.getAddress(), packet.getPort());
-					// No data to sent, send FIN back
-					safeSend(0, 1, 0, packet.getAddress(), packet.getPort());
-				} else {
-					System.out.println("Received a package unhandled!");
-				}
-				// when receivedSYN and packet has data, record data now
-				if (receivedSYN && tcpPacket.isACK() && tcpPacket.getLength() > 0) {
-					recordData(tcpPacket);
 				}
 			}
 			System.out.println("Stop running packet receiver thread...");

@@ -81,9 +81,7 @@ public class TCPPacket {
 	}
 
 	public void setStatus(Status s) {
-		synchronized (this.status) {
-			this.status = s;
-		}
+		this.status = s;
 	}
 
 	public Status getStatus() {
