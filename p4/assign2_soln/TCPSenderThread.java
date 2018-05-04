@@ -4,10 +4,10 @@ import java.util.*;
 
 public class TCPSenderThread extends TCPThread {
 
-	private BufferedReader in = null;
-	private boolean moreData = true;
+	private BufferedInputStream in = null;
 	private String filename = null;
 	protected DataSender dataSender;
+	private boolean needSendFilename = true;
 
 	public TCPSenderThread(int port, String remote_IP, int remote_port, String filename, int mtu, int sws) {
 		this.port = port;
@@ -26,12 +26,16 @@ public class TCPSenderThread extends TCPThread {
 		this.remote_port = remote_port;
 		this.mtu = mtu;
 		this.sws = sws;
+		this.sendQ = new ArrayDeque<>(sws);
 
 		try {
-			in = new BufferedReader(new FileReader(filename));
+			in = new BufferedInputStream(new FileInputStream(filename));
 			this.filename = filename;
+			moreData = true;
+			needSendFilename = true;
 		} catch (FileNotFoundException e) {
 			moreData = false;
+			needSendFilename = false;
 			System.err.println("Could not open given file.");
 		}
 
@@ -56,64 +60,44 @@ public class TCPSenderThread extends TCPThread {
 		safeSend(1, 0, 0, remote_address, remote_port);
 	}
 
-	private String getNextData() {
-		String returnValue = null;
-		try {
-			if ((returnValue = in.readLine()) == null) {
-				in.close();
-				moreData = false;
-				returnValue = "No more data. Goodbye.";
-			}
-		} catch (IOException e) {
-			returnValue = "IOException occurred in server.";
-		}
-		return returnValue;
-	}
 
 	@Override
 	protected void sendData() {
-		dataSender.start();
+		if (sendQ != null) dataSender.start();
 	}
 
 	protected class DataSender extends Thread {
 
 		public void run() {
-			// send the filename
-			sendFilename();
+			synchronized (sendQ) {
+				// clean the sliding window (sendQ)
+				while (sendQ.peek().getStatus() == TCPPacket.Status.Ack) {
+					sendQ.poll();
+				}
 
-			// TODO send data to the receiver through safe sender
-			// use CWND and slow start to control the number of packages
-			// use buffer window size to control the flow
-			while (moreData) {
-				try {
-					String dString = getNextData();
-					byte[] buf = dString.getBytes();
-					TCPPacket sent = new TCPPacket(mtu, seq_num, ack_num, 0, 0, 1);
-					sent.addData(buf);
-					seq_num += sent.getLength();
-					buf = sent.serialize();
-					// send the response to the client at "address" and "port"
-					DatagramPacket packet = new DatagramPacket(buf, buf.length, remote_address, remote_port);
-					System.out.println("Sending a data of size " + sent.getLength());
-					System.out.println(sent.print_msg());
-					socket.send(packet);
-					try {
-						Thread.sleep(1*1000);
-					} catch (InterruptedException e) {
-
+				while (sendQ.size() < sws && (moreData || needSendFilename)){
+					// can send data
+					if (needSendFilename) {
+						byte[] buf = filename.getBytes();
+						safeSendData(0, 0, 1, remote_address, remote_port, buf);
+					} else {
+						byte[] buf = new byte[mtu - TCPPacket.header_sz];
+						int res = -1;
+						try {
+							res = in.read(buf);
+						} catch (IOException e) {
+							System.err.println("Error in trying to read data!");
+						}
+						if (res < buf.length) {
+							moreData = false;
+						}
+						if (res > 0) safeSendData(0, 0, 1, remote_address, remote_port, buf);
 					}
-				} catch (IOException e) {
-					e.printStackTrace();
-					moreData = false;
 				}
 			}
 			// when finished sending data, send FIN to close the transfer
-			startClose();
+			if (!moreData && !needSendFilename && sendQ.size() == 0) startClose();
 		}
-	}
-
-	private void sendFilename() {
-		// send the filename to the receiver
 	}
 
 	private void startClose() {
@@ -127,5 +111,6 @@ public class TCPSenderThread extends TCPThread {
 		seq_num += data.length;
 		SafeSender sender = new SafeSender(seg, address, port);
 		sender.start();
+		sendQ.offer(seg);
 	}
 }

@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.net.*;
 
@@ -31,6 +32,10 @@ public class TCPThread extends Thread {
 	protected int wrongChecksum = 0;
 	protected int retranTime = 0;
 	protected int dupAck = 0;
+	protected ArrayDeque<TCPPacket> sendQ;
+	protected ArrayDeque<TCPPacket> receiveQ;
+	protected boolean moreData = false;
+	protected volatile int nextExpected = 0;
 
 	
 	public void run() {
@@ -63,7 +68,8 @@ public class TCPThread extends Thread {
 
 	protected void sendData() {
 		// do nothing
-		System.out.println("TCP thread for sending data, should be implemented in child class!");
+		if (moreData) System.out.println("TCP thread for sending data, should be implemented in child class!");
+		else System.out.println("No data to send!");
 	}
 
 	protected void recordData(TCPPacket tcpPacket) {
@@ -75,11 +81,21 @@ public class TCPThread extends Thread {
 		private TCPPacket seg;
 		private InetAddress out_address;
 		private int out_port;
+		private int remainTimes;
+		private boolean successfullySent;
 
 		public SafeSender(TCPPacket tcpPacket, InetAddress out_address, int out_port) {
 			this.seg = tcpPacket;
 			this.out_address = out_address;
 			this.out_port = out_port;
+			this.remainTimes = MAX_RESENT;
+			this.successfullySent = false;
+			seg.setStatus(TCPPacket.Status.Sent);
+			if (seg.getLength() == 0) {
+				sentTCPs.put(seg.getSeq()+1, seg);
+			} else {
+				sentTCPs.put(seg.getSeq()+seg.getLength(), seg);
+			}
 		}
 
 		public TCPPacket getTcpSeg() {
@@ -87,22 +103,15 @@ public class TCPThread extends Thread {
 		}
 
 		public void run() {
-			boolean successfullySent = false;
-			int remainTimes = MAX_RESENT;
 			while (!Thread.interrupted() && !successfullySent && remainTimes > 0) {
 				byte[] buf = seg.serialize();
 				DatagramPacket packet = new DatagramPacket(buf, buf.length, out_address, out_port);
 				try {
 					socket.send(packet);
 					packetSent++;
+					if (remainTimes != MAX_RESENT) retranTime++;
 				} catch (IOException e) {
 					e.printStackTrace();
-				}
-				seg.setStatus(TCPPacket.Status.Sent);
-				if (seg.getLength() == 0) {
-					sentTCPs.put(seg.getSeq()+1, seg);
-				} else {
-					sentTCPs.put(seg.getSeq()+seg.getLength(), seg);
 				}
 				long TO = getTO();
 				try {
@@ -113,29 +122,21 @@ public class TCPThread extends Thread {
 				//check whether this packet has been acknowledged
 				if (seg.getStatus() == TCPPacket.Status.Ack) {
 					successfullySent = true;
+					if (seg.isSYN()) {
+						connected = true;
+						remote_address = out_address;
+						remote_port = out_port;
+					} else if (seg.isFIN()) {
+						new CloseConnect().start();
+					}
 				} else {
 					remainTimes--;
-					if (seg.getLength() == 0) {
-						sentTCPs.remove(seg.getSeq()+1);
-					} else {
-						sentTCPs.remove(seg.getSeq()+seg.getLength());
-					}
-					if (remainTimes > 0) retranTime++;
 				}
 			}
-			if (!successfullySent) {
+			if (remainTimes == 0 && !successfullySent) {
 				System.err.println("Maximum number of retransmission has reached! Still cannot send. Stop sending!");
 				System.err.println("TCP segment: "+seg.print_msg());
 				seg.setStatus(TCPPacket.Status.Lost);
-			} else {
-				if (seg.isSYN()) {
-					connected = true;
-					remote_address = out_address;
-					remote_port = out_port;
-				} else if (seg.isFIN()) {
-					closed = true;
-					close_connection();
-				}
 			}
 		}
 	}
@@ -144,13 +145,21 @@ public class TCPThread extends Thread {
 		return timeOUT;
 	}
 
-	protected void close_connection() {
-		customize_close();
-		// close the incoming monitor
-		incomingMonitor.interrupt();
+	protected class CloseConnect extends Thread {
+		public void run() {
+			closed = true;
+			customize_close();
+			// close the incoming monitor
+			incomingMonitor.interrupt();
 
-		System.out.println("closing connection!");
-		socket.close();
+			System.out.println("closing connection!");
+			socket.close();
+			// reset the flags
+			connected = false;
+			closed = false;
+			receivedSYN = false;
+			receivedFIN = false;
+		}
 	}
 
 	protected void customize_close() {
@@ -164,7 +173,6 @@ public class TCPThread extends Thread {
 			// This packet is still being transmitted
 			// stop the sender
 			sender.interrupt();
-			retranTime++;
 			sender.start();
 			System.out.println("Resend a segment \n" + p.print_msg());
 		}
@@ -193,18 +201,17 @@ public class TCPThread extends Thread {
 				byte[] received = packet.getData();
 				tcpPacket.deserialize(received);
 				System.out.println("received a tcp seg \n" + tcpPacket.print_msg());
-				// TODO compute checksum and timeout and outOfSequence
+				// TODO compute checksum
 				boolean correctChecksum = true;
-				boolean inSequence = true;
 
 				// DO not drop the timeout packet
 				// Don't use the timeout for calculation
-				if (correctChecksum && inSequence) {
+				if (correctChecksum) {
 					if (tcpPacket.isACK()) {
 						// TODO Update timeout
-
 						if (tcpPacket.getLength() == 0 && !tcpPacket.isSYN() && !tcpPacket.isFIN()) {
-							System.out.println("received an acknowledgement!");
+							System.out.println("received an acknowledgement for data!");
+							if (connected) sendData();
 						}
 						// lookup sent TCPs
 						if (sentTCPs.containsKey(tcpPacket.getAck())) {
@@ -222,7 +229,7 @@ public class TCPThread extends Thread {
 							}
 						}
 
-						if (tcpPacket.isSYN() && !connected) {
+						if (tcpPacket.isSYN()) {
 							System.out.println("received an SYN+ACK!");
 							receivedSYN = true;
 							connected = true;
@@ -235,12 +242,40 @@ public class TCPThread extends Thread {
 						}
 
 						// when receivedSYN and packet has data, record data now
-						if (receivedSYN && tcpPacket.getLength() > 0) {
-							System.out.println("received an data segment!");
+						if (receivedSYN && tcpPacket.getLength() > 0 && receiveQ != null) {
+							synchronized (receiveQ) {
+								if (!connected) connected = true;
+								System.out.println("received an data segment!");
+								if ((tcpPacket.getSeq() - ack_num) > (sws-1)*(mtu-TCPPacket.header_sz)) {
+									// drop the packet
+									continue;
+								} else if (tcpPacket.getSeq() == ack_num) {
+									// swipe the receiveQ
+									ack_num = tcpPacket.getSeq() + tcpPacket.getLength();
+									sendAck(tcpPacket, packet.getAddress(), packet.getPort());
+									recordData(tcpPacket);
+									while (receiveQ.peek().getSeq() == ack_num) {
+										ack_num = tcpPacket.getSeq() + tcpPacket.getLength();
+										sendAck(tcpPacket, packet.getAddress(), packet.getPort());
+										TCPPacket buffedTcpPacket = receiveQ.poll();
+										recordData(buffedTcpPacket);
+									}
+								} else {
+									receiveQ.offer(tcpPacket);
+									// TODO fix this error! Currently assume arrive in order
+								}
+							}
+						}
+
+						// when received FIN+ACK
+						if (tcpPacket.isFIN()) {
+							receivedFIN = true;
+							System.out.println("received an FIN+ACK segment!");
 							ack_num = tcpPacket.getSeq() + tcpPacket.getLength();
 							sendAck(tcpPacket, packet.getAddress(), packet.getPort());
-							recordData(tcpPacket);
+							new CloseConnect().start();
 						}
+
 					} else if (tcpPacket.isSYN()){
 						System.out.println("received an SYN application!");
 						receivedSYN = true;
@@ -250,13 +285,12 @@ public class TCPThread extends Thread {
 					} else if (tcpPacket.isFIN()) {
 						System.out.println("received an FIN application!");
 						receivedFIN = true;
-						System.out.println("sending an ACK for FIN!");
+						System.out.println("sending an FIN+ACK for FIN!");
 						ack_num = tcpPacket.getSeq() + 1;
-						sendAck(tcpPacket, packet.getAddress(), packet.getPort());
-						// No data to sent, send FIN back
-						safeSend(0, 1, 0, packet.getAddress(), packet.getPort());
+						safeSend(0, 1, 1, packet.getAddress(), packet.getPort());
 					} else {
-						System.out.println("Received a package unhandled!");
+						System.out.println("Received a packet unhandled!");
+						System.out.println("Packet info: " + tcpPacket.print_msg());
 					}
 				}
 			}

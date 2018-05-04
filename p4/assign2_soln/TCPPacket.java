@@ -16,7 +16,7 @@ public class TCPPacket {
 	private int SYN = 0;
 	private int FIN = 0;
 	private int ACK = 0;
-	private static final int header_sz = 6*4;
+	public static final int header_sz = 6*4;
 	private byte[] data = new byte[0];
 	private short checksum = 0;
 	private int mtu = 0;
@@ -87,11 +87,11 @@ public class TCPPacket {
 		return this.ACK == 1;
 	}
 
-	public void setStatus(Status s) {
+	public synchronized void setStatus(Status s) {
 		this.status = s;
 	}
 
-	public Status getStatus() {
+	public synchronized Status getStatus() {
 		return this.status;
 	}
 
