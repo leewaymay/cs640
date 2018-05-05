@@ -44,6 +44,10 @@ public class TCPThread extends Thread {
 	}
 
 	protected void sendAck(TCPPacket tcpPacket, InetAddress address, int port) {
+		sendAck(ack_num, tcpPacket, address, port);
+	}
+
+	protected void sendAck(int ack_num, TCPPacket tcpPacket, InetAddress address, int port) {
 		TCPPacket seg = new TCPPacket(mtu, seq_num, ack_num, 0, 0, 1);
 		byte[] buf = seg.serialize(tcpPacket.getTimeStamp());
 		DatagramPacket out_packet = new DatagramPacket(buf, buf.length, address, port);
@@ -55,6 +59,7 @@ public class TCPThread extends Thread {
 			e.printStackTrace();
 		}
 	}
+
 
 	protected void safeSend(int SYN, int FIN, int ACK, InetAddress address, int port) {
 		safeSendData(SYN, FIN, ACK, address, port, MAX_RESENT, null);
@@ -106,20 +111,6 @@ public class TCPThread extends Thread {
 		private int out_port;
 		private int remainTimes;
 		private boolean successfullySent;
-
-		public SafeSender(TCPPacket tcpPacket, InetAddress out_address, int out_port) {
-			this.seg = tcpPacket;
-			this.out_address = out_address;
-			this.out_port = out_port;
-			this.remainTimes = MAX_RESENT;
-			this.successfullySent = false;
-			seg.setStatus(TCPPacket.Status.Sent);
-			if (seg.getLength() == 0) {
-				sentTCPs.put(seg.getSeq()+1, seg);
-			} else {
-				sentTCPs.put(seg.getSeq()+seg.getLength(), seg);
-			}
-		}
 
 		public SafeSender(TCPPacket tcpPacket, InetAddress out_address, int out_port, int maxTimes) {
 			this.seg = tcpPacket;
@@ -178,13 +169,11 @@ public class TCPThread extends Thread {
 					remainTimes--;
 				}
 			}
+
 			if (remainTimes == 0 && !successfullySent) {
-				if (seg.isFIN()) {
-					new CloseConnect().start();
-				} else {
-					System.err.println("Maximum number of retransmission has reached! Still cannot send. Stop sending!");
-					seg.setStatus(TCPPacket.Status.Lost);
-				}
+				System.err.println("Maximum number of retransmission has reached! Still cannot send. Stop sending!");
+				seg.setStatus(TCPPacket.Status.Lost);
+				new CloseConnect().start();
 			}
 		}
 	}
@@ -305,8 +294,9 @@ public class TCPThread extends Thread {
 						if (receivedSYN && receiveQ != null) {
 							synchronized (receiveQ) {
 								if (!connected) connected = true;
-								if ((tcpPacket.getSeq() - ack_num) > (sws-1)*(mtu-TCPPacket.header_sz)) {
+								if (tcpPacket.getSeq() > ack_num + (sws-1)*(mtu-TCPPacket.header_sz)) {
 									// drop the packet
+									outOfSeq++;
 									continue;
 								} else if (tcpPacket.getSeq() == ack_num) {
 									recordData(tcpPacket, packet.getAddress(), packet.getPort());
@@ -319,6 +309,12 @@ public class TCPThread extends Thread {
 											recordData(tcpPacket, packet.getAddress(), packet.getPort());
 										}
 									}
+								} else if (tcpPacket.getSeq() < ack_num) {
+									// received a packet previously acknowledged.
+									// probably due to the ack is dropped
+									// just resend the ack
+									sendAck(tcpPacket.getSeq()+tcpPacket.getLength(), tcpPacket, packet.getAddress(), packet.getPort());
+
 								} else {
 									// received a packet out of order
 									// keep it in buffer
