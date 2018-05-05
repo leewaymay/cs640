@@ -306,7 +306,7 @@ public class TCPThread extends Thread {
 									if (receiveQ.size() > 0) System.out.println("ack num: " + ack_num + ". tmp seq num:" + receiveQ.peek().getSeq());
 									while (receiveQ.size() > 0 && receiveQ.peek().getSeq() <= ack_num) {
 										TCPPacket tmp = receiveQ.poll();
-										System.out.println("next tmp seq num:" + receiveQ.peek().getSeq());
+										if (receiveQ.size() > 0) System.out.println("next tmp seq num:" + receiveQ.peek().getSeq());
 										// discard the packet with sequence number smaller than ack_num
 										// which indicates that this is already been acked.
 										if (tmp.getSeq() == ack_num) {
