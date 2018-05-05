@@ -66,7 +66,7 @@ public class TCPThread extends Thread {
 	}
 
 	protected void safeSend(int SYN, int FIN, int ACK, InetAddress address, int port, int maxTimes) {
-		safeSendData(SYN, FIN, ACK, address, port, MAX_RESENT, null);
+		safeSendData(SYN, FIN, ACK, address, port, maxTimes, null);
 	}
 
 	protected void safeSendData(int SYN, int FIN, int ACK, InetAddress address, int port, byte[] data) {
@@ -235,8 +235,8 @@ public class TCPThread extends Thread {
 					socket.receive(packet);
 					packetReceived++;
 				} catch (IOException e) {
-					e.printStackTrace();
-					System.err.println("Error in receiving a udp packet");
+					System.out.println("Socket is closed!");
+					break;
 				}
 				byte[] received = packet.getData();
 				tcpPacket.deserialize(received);
@@ -250,7 +250,7 @@ public class TCPThread extends Thread {
 					if (tcpPacket.isACK()) {
 						// TODO Update timeout
 						if (!tcpPacket.isSYN() && !tcpPacket.isFIN()) {
-							if (connected) sendData();
+							if (connected && moreData) sendData();
 						}
 						// lookup sent TCPs
 						if (sentTCPs.containsKey(tcpPacket.getAck())) {
@@ -279,7 +279,7 @@ public class TCPThread extends Thread {
 						// when received FIN+ACK
 						if (tcpPacket.isFIN()) {
 							receivedFIN = true;
-							ack_num = tcpPacket.getSeq() + tcpPacket.getLength();
+							ack_num = tcpPacket.getSeq() + 1;
 							sendAck(tcpPacket, packet.getAddress(), packet.getPort());
 							new CloseConnect().start();
 						}
