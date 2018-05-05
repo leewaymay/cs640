@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.net.*;
@@ -304,10 +305,9 @@ public class TCPThread extends Thread {
 								} else if (tcpPacket.getSeq() == ack_num) {
 									recordData(tcpPacket, packet.getAddress(), packet.getPort());
 									// swipe the receiveQ
-									if (receiveQ.size() > 0) System.out.println("ack num: " + ack_num + ". tmp seq num:" + receiveQ.peek().getSeq());
+									printPQ();
 									while (receiveQ.size() > 0 && receiveQ.peek().getSeq() <= ack_num) {
 										TCPPacket tmp = receiveQ.poll();
-										if (receiveQ.size() > 0) System.out.println("next tmp seq num:" + receiveQ.peek().getSeq());
 										// discard the packet with sequence number smaller than ack_num
 										// which indicates that this is already been acked.
 										if (tmp.getSeq() == ack_num) {
@@ -342,6 +342,18 @@ public class TCPThread extends Thread {
 
 	private String print_seg(TCPPacket seg) {
 		return seg.print_msg(startTime);
+	}
+
+	private void printPQ() {
+		ArrayList<TCPPacket> tmp = new ArrayList<>();
+		while (receiveQ.size() > 0) {
+			TCPPacket p = receiveQ.poll();
+			System.out.println("Buffered: " + print_seg(p));
+			tmp.add(p);
+		}
+		for (TCPPacket p : tmp) {
+			receiveQ.offer(p);
+		}
 	}
 	
 }
