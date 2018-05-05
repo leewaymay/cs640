@@ -276,10 +276,8 @@ public class TCPThread extends Thread {
 						}
 
 						if (tcpPacket.isSYN()) {
-							System.out.println("received an SYN+ACK!");
 							receivedSYN = true;
 							connected = true;
-							System.out.println("sending an ACK for SYN+ACK!");
 							// set ack_num to received packet seq_num + 1
 							ack_num = tcpPacket.getSeq() + 1;
 							sendAck(tcpPacket, packet.getAddress(), packet.getPort());
@@ -289,22 +287,17 @@ public class TCPThread extends Thread {
 						// when received FIN+ACK
 						if (tcpPacket.isFIN()) {
 							receivedFIN = true;
-							System.out.println("received a FIN+ACK!");
 							ack_num = tcpPacket.getSeq() + tcpPacket.getLength();
 							sendAck(tcpPacket, packet.getAddress(), packet.getPort());
 							new CloseConnect().start();
 						}
 
 					} else if (tcpPacket.isSYN()){
-						System.out.println("received an SYN!");
 						receivedSYN = true;
 						ack_num = tcpPacket.getSeq() + 1;
-						System.out.println("sending an ACK+SYN for SYN!");
 						safeSend(1, 0, 1, packet.getAddress(), packet.getPort());
 					} else if (tcpPacket.isFIN()) {
-						System.out.println("received an FIN!");
 						receivedFIN = true;
-						System.out.println("sending an FIN+ACK for FIN!");
 						ack_num = tcpPacket.getSeq() + 1;
 						safeSend(0, 1, 1, packet.getAddress(), packet.getPort(), 3);
 					} else if (tcpPacket.isDATA()) {
