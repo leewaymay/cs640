@@ -303,7 +303,7 @@ public class TCPThread extends Thread {
 								} else if (tcpPacket.getSeq() == ack_num) {
 									recordData(tcpPacket, packet.getAddress(), packet.getPort());
 									// swipe the receiveQ
-									System.out.println("ack num: " + ack_num + ". tmp seq num:" + receiveQ.peek().getSeq());
+									if (receiveQ.size() > 0) System.out.println("ack num: " + ack_num + ". tmp seq num:" + receiveQ.peek().getSeq());
 									while (receiveQ.size() > 0 && receiveQ.peek().getSeq() <= ack_num) {
 										TCPPacket tmp = receiveQ.poll();
 										System.out.println("next tmp seq num:" + receiveQ.peek().getSeq());
