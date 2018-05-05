@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
-import java.util.ArrayDeque;
+import java.util.Comparator;
+import java.util.PriorityQueue;
 
 public class TCPReceiverThread extends TCPThread {
 
@@ -18,7 +19,12 @@ public class TCPReceiverThread extends TCPThread {
 		this.port = port;
 		this.mtu = mtu;
 		this.sws = sws;
-		this.receiveQ = new ArrayDeque<>(sws);
+		this.receiveQ = new PriorityQueue<>(sws, new Comparator<TCPPacket>() {
+			@Override
+			public int compare(TCPPacket tcpPacket, TCPPacket t1) {
+				return tcpPacket.getSeq()-t1.getSeq();
+			}
+		});
 
 		this.default_filename = "tcp_tmp.txt";
 
@@ -66,8 +72,7 @@ public class TCPReceiverThread extends TCPThread {
 	}
 
 	@Override
-	protected void recordData(TCPPacket tcpPacket) {
-
+	protected void writeData(TCPPacket tcpPacket) {
 		byte[] data = tcpPacket.getData();
 		String s = new String(data,0, tcpPacket.getLength());
 		// TODO keep a buffered window and write to text, implement it in child class

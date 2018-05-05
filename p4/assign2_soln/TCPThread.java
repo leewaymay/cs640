@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.net.*;
 
@@ -33,9 +34,8 @@ public class TCPThread extends Thread {
 	protected int retranTime = 0;
 	protected int dupAck = 0;
 	protected ArrayDeque<TCPPacket> sendQ;
-	protected ArrayDeque<TCPPacket> receiveQ;
+	protected PriorityQueue<TCPPacket> receiveQ;
 	protected boolean moreData = false;
-	protected volatile int nextExpected = 0;
 
 	
 	public void run() {
@@ -72,9 +72,15 @@ public class TCPThread extends Thread {
 		else System.out.println("No data to send!");
 	}
 
-	protected void recordData(TCPPacket tcpPacket) {
+	protected void recordData(TCPPacket tcpPacket,  InetAddress address, int port) {
+		ack_num = tcpPacket.getSeq() + tcpPacket.getLength();
+		sendAck(tcpPacket, address, port);
+		writeData(tcpPacket);
+	}
+
+	protected void writeData(TCPPacket tcpPacket) {
 		// do nothing
-		System.out.println("TCP thread for receiving data, should be implemented in child class!");
+		System.out.println("TCP thread for write data, should be implemented in child class!");
 	}
 
 	protected class SafeSender extends Thread {
@@ -250,19 +256,22 @@ public class TCPThread extends Thread {
 									// drop the packet
 									continue;
 								} else if (tcpPacket.getSeq() == ack_num) {
+									recordData(tcpPacket, packet.getAddress(), packet.getPort());
 									// swipe the receiveQ
-									ack_num = tcpPacket.getSeq() + tcpPacket.getLength();
-									sendAck(tcpPacket, packet.getAddress(), packet.getPort());
-									recordData(tcpPacket);
-									while (receiveQ.peek().getSeq() == ack_num) {
-										ack_num = tcpPacket.getSeq() + tcpPacket.getLength();
-										sendAck(tcpPacket, packet.getAddress(), packet.getPort());
-										TCPPacket buffedTcpPacket = receiveQ.poll();
-										recordData(buffedTcpPacket);
+									while (receiveQ.peek().getSeq() <= ack_num) {
+										TCPPacket tmp = receiveQ.poll();
+										// discard the packet with sequence number smaller than ack_num
+										// which indicates that this is already been acked.
+										if (tmp.getSeq() == ack_num) {
+											recordData(tcpPacket, packet.getAddress(), packet.getPort());
+										}
 									}
 								} else {
+									// received a packet out of order
+									// keep it in buffer
+									// send the duplicate ack
 									receiveQ.offer(tcpPacket);
-									// TODO fix this error! Currently assume arrive in order
+									sendAck(tcpPacket, packet.getAddress(), packet.getPort());
 								}
 							}
 						}
