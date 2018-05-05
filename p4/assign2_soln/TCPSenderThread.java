@@ -6,7 +6,6 @@ public class TCPSenderThread extends TCPThread {
 
 	private BufferedInputStream in = null;
 	private String filename = null;
-	protected DataSender dataSender;
 	private boolean needSendFilename = true;
 
 	public TCPSenderThread(int port, String remote_IP, int remote_port, String filename, int mtu, int sws) {
@@ -41,7 +40,6 @@ public class TCPSenderThread extends TCPThread {
 
 		this.seq_num = 0;
 		this.incomingMonitor = new IncomingMonitor();
-		this.dataSender = new DataSender();
 	}
 
 	@Override
@@ -63,7 +61,7 @@ public class TCPSenderThread extends TCPThread {
 
 	@Override
 	protected void sendData() {
-		if (sendQ != null) dataSender.start();
+		if (sendQ != null) new DataSender().start();
 	}
 
 	protected class DataSender extends Thread {
@@ -108,7 +106,7 @@ public class TCPSenderThread extends TCPThread {
 	private void safeSendData(int SYN, int FIN, int ACK, InetAddress address, int port, byte[] data) {
 		TCPPacket seg = new TCPPacket(mtu, seq_num, ack_num, SYN, FIN, ACK);
 		seg.addData(data);
-		seq_num += data.length;
+		seq_num += seg.getLength();
 		SafeSender sender = new SafeSender(seg, address, port);
 		sender.start();
 		sendQ.offer(seg);
