@@ -310,7 +310,7 @@ public class TCPThread extends Thread {
 										// discard the packet with sequence number smaller than ack_num
 										// which indicates that this is already been acked.
 										if (tmp.getSeq() == ack_num) {
-											recordData(tcpPacket, packet.getAddress(), packet.getPort());
+											recordData(tmp, packet.getAddress(), packet.getPort());
 										}
 									}
 								} else if (tcpPacket.getSeq() < ack_num) {
