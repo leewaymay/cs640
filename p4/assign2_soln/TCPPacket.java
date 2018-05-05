@@ -1,7 +1,7 @@
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public class TCPPacket {
+public class TCPPacket implements Cloneable{
 
 	public enum Status {
 		Default, Sent, Ack, Lost
@@ -38,6 +38,10 @@ public class TCPPacket {
 		if (mtu < header_sz) {
 			System.out.println("mtu is too small to fit a TCP header!");
 		}
+	}
+
+	public Object clone() throws CloneNotSupportedException {
+		return super.clone();
 	}
 
 	public void addData(byte[] data) {

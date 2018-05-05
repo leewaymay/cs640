@@ -305,7 +305,7 @@ public class TCPThread extends Thread {
 								} else if (tcpPacket.getSeq() == ack_num) {
 									recordData(tcpPacket, packet.getAddress(), packet.getPort());
 									// swipe the receiveQ
-									printPQ();
+									// printPQ();
 									while (receiveQ.size() > 0 && receiveQ.peek().getSeq() <= ack_num) {
 										TCPPacket tmp = receiveQ.poll();
 										// discard the packet with sequence number smaller than ack_num
@@ -325,9 +325,15 @@ public class TCPThread extends Thread {
 									// received a packet out of order
 									// keep it in buffer
 									// send the duplicate ack
-									receiveQ.offer(tcpPacket);
-									System.out.println("buffered packet:" + tcpPacket.getSeq());
-									sendAck(tcpPacket, packet.getAddress(), packet.getPort());
+									try {
+										TCPPacket buffered = (TCPPacket) tcpPacket.clone();
+										receiveQ.offer(buffered);
+										System.out.println("buffered packet:" + tcpPacket.getSeq());
+										sendAck(tcpPacket, packet.getAddress(), packet.getPort());
+									} catch (CloneNotSupportedException e) {
+										System.out.println("Error in clone the packet");
+									}
+
 								}
 							}
 						}
