@@ -92,7 +92,6 @@ public class TCPThread extends Thread {
 	protected void sendData() {
 		// do nothing
 		if (moreData) System.out.println("TCP thread for sending data, should be implemented in child class!");
-		else System.out.println("No data to send!");
 	}
 
 	protected void recordData(TCPPacket tcpPacket,  InetAddress address, int port) {
@@ -251,7 +250,7 @@ public class TCPThread extends Thread {
 					if (tcpPacket.isACK()) {
 						// TODO Update timeout
 						if (!tcpPacket.isSYN() && !tcpPacket.isFIN()) {
-							if (connected && moreData) sendData();
+							if (connected) sendData();
 						}
 						// lookup sent TCPs
 						if (sentTCPs.containsKey(tcpPacket.getAck())) {
@@ -305,13 +304,11 @@ public class TCPThread extends Thread {
 								} else if (tcpPacket.getSeq() == ack_num) {
 									recordData(tcpPacket, packet.getAddress(), packet.getPort());
 									// swipe the receiveQ
-									// printPQ();
 									while (receiveQ.size() > 0 && receiveQ.peek().getSeq() <= ack_num) {
 										TCPPacket tmp = receiveQ.poll();
 										// discard the packet with sequence number smaller than ack_num
 										// which indicates that this is already been acked.
 										if (tmp.getSeq() == ack_num) {
-											System.out.println("Read buffer");
 											recordData(tmp, packet.getAddress(), packet.getPort());
 										}
 									}
@@ -328,12 +325,10 @@ public class TCPThread extends Thread {
 									try {
 										TCPPacket buffered = (TCPPacket) tcpPacket.clone();
 										receiveQ.offer(buffered);
-										System.out.println("buffered packet:" + tcpPacket.getSeq());
 										sendAck(tcpPacket, packet.getAddress(), packet.getPort());
 									} catch (CloneNotSupportedException e) {
 										System.out.println("Error in clone the packet");
 									}
-
 								}
 							}
 						}
@@ -348,18 +343,6 @@ public class TCPThread extends Thread {
 
 	private String print_seg(TCPPacket seg) {
 		return seg.print_msg(startTime);
-	}
-
-	private void printPQ() {
-		ArrayList<TCPPacket> tmp = new ArrayList<>();
-		while (receiveQ.size() > 0) {
-			TCPPacket p = receiveQ.poll();
-			System.out.println("Buffered: " + print_seg(p));
-			tmp.add(p);
-		}
-		for (TCPPacket p : tmp) {
-			receiveQ.offer(p);
-		}
 	}
 	
 }
