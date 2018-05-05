@@ -326,6 +326,7 @@ public class TCPThread extends Thread {
 									// keep it in buffer
 									// send the duplicate ack
 									receiveQ.offer(tcpPacket);
+									System.out.println("buffered packet:" + tcpPacket.getSeq());
 									sendAck(tcpPacket, packet.getAddress(), packet.getPort());
 								}
 							}
