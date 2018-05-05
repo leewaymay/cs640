@@ -146,6 +146,6 @@ public class TCPPacket {
 		flag_list[1] = isACK() ? 'A' : '-';
 		flag_list[2] = isFIN() ? 'F' : '-';
 		flag_list[0] = isDATA() ? 'D' : '-';
-		return String.format("%f %s %d %d, %d", (System.nanoTime() - startTime) / 1e6, String.valueOf(flag_list), seq, length, ack);
+		return String.format("%.3f %s %d %d, %d", (System.nanoTime() - startTime) / 1e9, String.valueOf(flag_list), seq, length, ack);
 	}
 }

@@ -147,7 +147,10 @@ public class TCPThread extends Thread {
 					socket.send(packet);
 					System.out.println("snd " + print_seg(seg));
 					packetSent++;
-					if (remainTimes != MAX_RESENT) retranTime++;
+					if (remainTimes != MAX_RESENT) {
+						System.out.println("Retransmit " + print_seg(seg));
+						retranTime++;
+					}
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -214,7 +217,7 @@ public class TCPThread extends Thread {
 			// This packet is still being transmitted
 			// stop the sender
 			sender.interrupt();
-			System.out.println("Fast Retransmit " + print_seg(p));
+			System.out.println("Fast Retransmitting");
 			sender.start();
 		}
 		if (p.getStatus() == TCPPacket.Status.Ack) {
