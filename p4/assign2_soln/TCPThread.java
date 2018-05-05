@@ -56,7 +56,7 @@ public class TCPThread extends Thread {
 			System.out.println("snd " + print_seg(seg));
 			packetSent++;
 		} catch (IOException e) {
-			e.printStackTrace();
+			System.out.println("Socket is closed!");
 		}
 	}
 
@@ -147,7 +147,8 @@ public class TCPThread extends Thread {
 						retranTime++;
 					}
 				} catch (IOException e) {
-					e.printStackTrace();
+					System.out.println("Socket is closed!");
+					break;
 				}
 				long TO = getTO();
 				try {
@@ -170,8 +171,10 @@ public class TCPThread extends Thread {
 				}
 			}
 
-			if (remainTimes == 0 && !successfullySent) {
-				System.err.println("Maximum number of retransmission has reached! Still cannot send. Stop sending!");
+			if (!successfullySent) {
+				if (remainTimes == 0) {
+					System.err.println("Maximum number of retransmission has reached! Still cannot send. Stop sending!");
+				}
 				seg.setStatus(TCPPacket.Status.Lost);
 				new CloseConnect().start();
 			}
@@ -297,7 +300,6 @@ public class TCPThread extends Thread {
 								if (tcpPacket.getSeq() > ack_num + (sws-1)*(mtu-TCPPacket.header_sz)) {
 									// drop the packet
 									outOfSeq++;
-									continue;
 								} else if (tcpPacket.getSeq() == ack_num) {
 									recordData(tcpPacket, packet.getAddress(), packet.getPort());
 									// swipe the receiveQ
