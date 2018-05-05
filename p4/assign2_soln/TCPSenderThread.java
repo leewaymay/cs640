@@ -78,6 +78,7 @@ public class TCPSenderThread extends TCPThread {
 					if (needSendFilename) {
 						byte[] buf = filename.getBytes();
 						safeSendData(0, 0, 1, remote_address, remote_port, buf);
+						needSendFilename = false;
 					} else {
 						byte[] buf = new byte[mtu - TCPPacket.header_sz];
 						int res = -1;

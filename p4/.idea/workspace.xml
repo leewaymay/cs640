@@ -12,11 +12,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="TCPSenderThread.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="TCPSenderThread.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/assign2_soln/TCPSenderThread.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="650">
-              <caret line="108" column="34" lean-forward="false" selection-start-line="108" selection-start-column="34" selection-end-line="108" selection-end-column="34" />
+            <state relative-caret-position="254">
+              <caret line="80" column="49" lean-forward="false" selection-start-line="80" selection-start-column="49" selection-end-line="80" selection-end-column="49" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="e#1602#1603#0" expanded="true" />
@@ -113,7 +113,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="TCPThread.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="TCPThread.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/assign2_soln/TCPThread.java">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="521">
@@ -170,8 +170,8 @@
         <option value="$PROJECT_DIR$/assign2_soln/Makefile" />
         <option value="$PROJECT_DIR$/assign2_soln/TCPPacket.java" />
         <option value="$PROJECT_DIR$/assign2_soln/TCPReceiverThread.java" />
-        <option value="$PROJECT_DIR$/assign2_soln/TCPSenderThread.java" />
         <option value="$PROJECT_DIR$/assign2_soln/TCPThread.java" />
+        <option value="$PROJECT_DIR$/assign2_soln/TCPSenderThread.java" />
       </list>
     </option>
   </component>
@@ -1054,18 +1054,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/assign2_soln/TCPSenderThread.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="650">
-          <caret line="108" column="34" lean-forward="false" selection-start-line="108" selection-start-column="34" selection-end-line="108" selection-end-column="34" />
-          <folding>
-            <element signature="imports" expanded="true" />
-            <element signature="e#1602#1603#0" expanded="true" />
-            <element signature="e#1652#1653#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/assign2_soln/TCPThread.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="521">
@@ -1076,6 +1064,18 @@
             <element signature="e#3441#3442#0" expanded="true" />
             <element signature="e#4645#4646#0" expanded="true" />
             <element signature="e#4666#4667#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/assign2_soln/TCPSenderThread.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="254">
+          <caret line="80" column="49" lean-forward="false" selection-start-line="80" selection-start-column="49" selection-end-line="80" selection-end-column="49" />
+          <folding>
+            <element signature="imports" expanded="true" />
+            <element signature="e#1602#1603#0" expanded="true" />
+            <element signature="e#1652#1653#0" expanded="true" />
           </folding>
         </state>
       </provider>
