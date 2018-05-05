@@ -76,6 +76,6 @@ public class TCPReceiverThread extends TCPThread {
 		byte[] data = tcpPacket.getData();
 		String s = new String(data,0, tcpPacket.getLength());
 		// TODO keep a buffered window and write to text, implement it in child class
-		System.out.println("*** seq: " + tcpPacket.getSeq() + " *****\n" + s + "\n****** len: " + tcpPacket.getLength() + "*****");
+		System.out.println("\n*** seq: " + tcpPacket.getSeq() + " *****\n" + s + "\n************\n");
 	}
 }
