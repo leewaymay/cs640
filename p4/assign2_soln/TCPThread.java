@@ -73,7 +73,7 @@ public class TCPThread extends Thread {
 		if (SYN == 1 || FIN == 1) {
 			seq_num++;
 		}
-		if (data != null || data.length > 0) {
+		if (data != null && data.length > 0) {
 			seg.addData(data);
 			seq_num += seg.getLength();
 		}
