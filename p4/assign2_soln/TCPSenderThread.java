@@ -71,7 +71,7 @@ public class TCPSenderThread extends TCPThread {
 		public void run() {
 			synchronized (sendQ) {
 				// clean the sliding window (sendQ)
-				while (sendQ.peek().getStatus() == TCPPacket.Status.Ack) {
+				while (sendQ.size() > 0 && sendQ.peek().getStatus() == TCPPacket.Status.Ack) {
 					sendQ.poll();
 				}
 
