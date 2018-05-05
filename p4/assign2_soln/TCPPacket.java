@@ -59,6 +59,10 @@ public class TCPPacket implements Cloneable{
 		return this.ack_times;
 	}
 
+	public void resetAckTimes() {
+		this.ack_times = 0;
+	}
+
 	public byte[] getData() {
 		return this.data;
 	}

@@ -140,12 +140,12 @@ public class TCPThread extends Thread {
 				DatagramPacket packet = new DatagramPacket(buf, buf.length, out_address, out_port);
 				try {
 					socket.send(packet);
-					System.out.println("snd " + print_seg(seg));
 					packetSent++;
 					if (remainTimes != MAX_RESENT) {
-						System.out.println("Retransmit " + print_seg(seg));
+						System.out.println("Retransmit");
 						retranTime++;
 					}
+					System.out.println("snd " + print_seg(seg));
 				} catch (IOException e) {
 					System.out.println("Socket is closed!");
 					break;
@@ -155,6 +155,7 @@ public class TCPThread extends Thread {
 					Thread.sleep(TO/1000000);
 				} catch (InterruptedException e) {
 					System.out.println("sender get interrupted");
+					return;
 				}
 				//check whether this packet has been acknowledged
 				if (seg.getStatus() == TCPPacket.Status.Ack) {
@@ -170,6 +171,8 @@ public class TCPThread extends Thread {
 					remainTimes--;
 				}
 			}
+
+			if (Thread.interrupted()) return;
 
 			if (!successfullySent) {
 				if (remainTimes == 0) {
@@ -207,7 +210,7 @@ public class TCPThread extends Thread {
 	}
 
 	protected void fastRetransmit(SafeSender sender) {
-		System.out.println("Retransmit a packet due to fast retransmission.");
+		System.out.println("Fast retransmission.");
 		TCPPacket p = sender.getTcpSeg();
 		if (p.getStatus() == TCPPacket.Status.Sent) {
 			// This packet is still being transmitted
