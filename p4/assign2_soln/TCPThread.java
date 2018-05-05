@@ -139,6 +139,10 @@ public class TCPThread extends Thread {
 			return seg;
 		}
 
+		public SafeSender makeClone() {
+			return new SafeSender(seg, out_address, out_port, remainTimes);
+		}
+
 		public void run() {
 			while (!Thread.interrupted() && !successfullySent && remainTimes > 0) {
 				byte[] buf = seg.serialize();
@@ -217,8 +221,9 @@ public class TCPThread extends Thread {
 			// This packet is still being transmitted
 			// stop the sender
 			sender.interrupt();
-			System.out.println("Fast Retransmitting");
-			sender.start();
+			SafeSender newSender = sender.makeClone();
+			tcpSenders.put(p.getSeq(), newSender);
+			newSender.start();
 		}
 		if (p.getStatus() == TCPPacket.Status.Ack) {
 			System.out.println("This packet is already acked!");
@@ -256,7 +261,7 @@ public class TCPThread extends Thread {
 							if (connected) sendData();
 						}
 						// lookup sent TCPs
-						if (tcpPacket.getLength() == 0 && sentTCPs.containsKey(tcpPacket.getAck())) {
+						if (sentTCPs.containsKey(tcpPacket.getAck())) {
 							TCPPacket sent = sentTCPs.get(tcpPacket.getAck());
 							sent.setStatus(TCPPacket.Status.Ack);
 							int num_acked = sent.increaseAckTimes();
