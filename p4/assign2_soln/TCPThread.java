@@ -299,6 +299,7 @@ public class TCPThread extends Thread {
 								if (!connected) connected = true;
 								if (tcpPacket.getSeq() > ack_num + (sws-1)*(mtu-TCPPacket.header_sz)) {
 									// drop the packet
+									System.out.println("dropped packet:" + tcpPacket.getSeq());
 									outOfSeq++;
 								} else if (tcpPacket.getSeq() == ack_num) {
 									recordData(tcpPacket, packet.getAddress(), packet.getPort());
