@@ -11,7 +11,7 @@ public class TCPThread extends Thread {
 	protected volatile boolean receivedFIN = false;
 	protected static final int MAX_RESENT = 16;
 
-	protected volatile long timeOUT = (long)30*1000*1000*1000;
+	protected volatile long timeOUT = (long)5*1000*1000*1000;
 	protected ConcurrentHashMap<Integer, TCPPacket> sentTCPs = new ConcurrentHashMap<>();
 	protected ConcurrentHashMap<Integer, SafeSender> tcpSenders = new ConcurrentHashMap<>();
 	protected IncomingMonitor incomingMonitor;
@@ -36,6 +36,7 @@ public class TCPThread extends Thread {
 	protected ArrayDeque<TCPPacket> sendQ;
 	protected PriorityQueue<TCPPacket> receiveQ;
 	protected boolean moreData = false;
+	protected long startTime = System.nanoTime();
 
 	
 	public void run() {
@@ -48,22 +49,38 @@ public class TCPThread extends Thread {
 		DatagramPacket out_packet = new DatagramPacket(buf, buf.length, address, port);
 		try {
 			socket.send(out_packet);
+			System.out.println("snd " + seg.print_msg(startTime));
 			packetSent++;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		System.out.println("Send a acknowledge segment \n");
 	}
 
 	protected void safeSend(int SYN, int FIN, int ACK, InetAddress address, int port) {
+		safeSendData(SYN, FIN, ACK, address, port, MAX_RESENT, null);
+	}
+
+	protected void safeSend(int SYN, int FIN, int ACK, InetAddress address, int port, int maxTimes) {
+		safeSendData(SYN, FIN, ACK, address, port, MAX_RESENT, null);
+	}
+
+	protected void safeSendData(int SYN, int FIN, int ACK, InetAddress address, int port, byte[] data) {
+		safeSendData(SYN, FIN, ACK, address, port, MAX_RESENT, data);
+	}
+
+	protected void safeSendData(int SYN, int FIN, int ACK, InetAddress address, int port, int maxTimes, byte[] data) {
 		TCPPacket seg = new TCPPacket(mtu, seq_num, ack_num, SYN, FIN, ACK);
 		if (SYN == 1 || FIN == 1) {
 			seq_num++;
 		}
-		SafeSender sender = new SafeSender(seg, address, port);
+		if (data != null || data.length > 0) {
+			seg.addData(data);
+			seq_num += seg.getLength();
+		}
+		SafeSender sender = new SafeSender(seg, address, port, maxTimes);
 		sender.start();
-		System.out.println("Send a segment \n" + seg.print_msg());
 		tcpSenders.put(seg.getSeq(), sender);
+		sendQ.offer(seg);
 	}
 
 	protected void sendData() {
@@ -104,6 +121,20 @@ public class TCPThread extends Thread {
 			}
 		}
 
+		public SafeSender(TCPPacket tcpPacket, InetAddress out_address, int out_port, int maxTimes) {
+			this.seg = tcpPacket;
+			this.out_address = out_address;
+			this.out_port = out_port;
+			this.remainTimes = maxTimes;
+			this.successfullySent = false;
+			seg.setStatus(TCPPacket.Status.Sent);
+			if (seg.getLength() == 0) {
+				sentTCPs.put(seg.getSeq()+1, seg);
+			} else {
+				sentTCPs.put(seg.getSeq()+seg.getLength(), seg);
+			}
+		}
+
 		public TCPPacket getTcpSeg() {
 			return seg;
 		}
@@ -114,6 +145,7 @@ public class TCPThread extends Thread {
 				DatagramPacket packet = new DatagramPacket(buf, buf.length, out_address, out_port);
 				try {
 					socket.send(packet);
+					System.out.println("snd " + seg.print_msg(startTime));
 					packetSent++;
 					if (remainTimes != MAX_RESENT) retranTime++;
 				} catch (IOException e) {
@@ -140,9 +172,12 @@ public class TCPThread extends Thread {
 				}
 			}
 			if (remainTimes == 0 && !successfullySent) {
-				System.err.println("Maximum number of retransmission has reached! Still cannot send. Stop sending!");
-				System.err.println("TCP segment: "+seg.print_msg());
-				seg.setStatus(TCPPacket.Status.Lost);
+				if (seg.isFIN()) {
+					new CloseConnect().start();
+				} else {
+					System.err.println("Maximum number of retransmission has reached! Still cannot send. Stop sending!");
+					seg.setStatus(TCPPacket.Status.Lost);
+				}
 			}
 		}
 	}
@@ -180,7 +215,6 @@ public class TCPThread extends Thread {
 			// stop the sender
 			sender.interrupt();
 			sender.start();
-			System.out.println("Resend a segment \n" + p.print_msg());
 		}
 		if (p.getStatus() == TCPPacket.Status.Ack) {
 			System.out.println("This packet is already acked!");
@@ -191,7 +225,6 @@ public class TCPThread extends Thread {
 	protected class IncomingMonitor extends Thread {
 
 		public void run() {
-			System.out.println("Monitoring TCP delivery");
 			TCPPacket tcpPacket = new TCPPacket(mtu);
 			byte[] buf = tcpPacket.serialize();
 			DatagramPacket packet = new DatagramPacket(buf, buf.length);
@@ -206,7 +239,7 @@ public class TCPThread extends Thread {
 				}
 				byte[] received = packet.getData();
 				tcpPacket.deserialize(received);
-				System.out.println("received a tcp seg \n" + tcpPacket.print_msg());
+				System.out.println("rcv " + tcpPacket.print_msg(startTime));
 				// TODO compute checksum
 				boolean correctChecksum = true;
 
@@ -216,12 +249,10 @@ public class TCPThread extends Thread {
 					if (tcpPacket.isACK()) {
 						// TODO Update timeout
 						if (tcpPacket.getLength() == 0 && !tcpPacket.isSYN() && !tcpPacket.isFIN()) {
-							System.out.println("received an acknowledgement for data!");
 							if (connected) sendData();
 						}
 						// lookup sent TCPs
-						if (sentTCPs.containsKey(tcpPacket.getAck())) {
-							System.out.println("received an acknowledgement for a sent tcp packet!");
+						if (tcpPacket.getLength() == 0 && sentTCPs.containsKey(tcpPacket.getAck())) {
 							TCPPacket sent = sentTCPs.get(tcpPacket.getAck());
 							sent.setStatus(TCPPacket.Status.Ack);
 							int num_acked = sent.increaseAckTimes();
@@ -296,10 +327,9 @@ public class TCPThread extends Thread {
 						receivedFIN = true;
 						System.out.println("sending an FIN+ACK for FIN!");
 						ack_num = tcpPacket.getSeq() + 1;
-						safeSend(0, 1, 1, packet.getAddress(), packet.getPort());
+						safeSend(0, 1, 1, packet.getAddress(), packet.getPort(), 3);
 					} else {
 						System.out.println("Received a packet unhandled!");
-						System.out.println("Packet info: " + tcpPacket.print_msg());
 					}
 				}
 			}

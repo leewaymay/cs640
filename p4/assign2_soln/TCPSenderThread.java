@@ -103,13 +103,4 @@ public class TCPSenderThread extends TCPThread {
 		System.out.println("sending a FIN to close!");
 		safeSend(0, 1, 0, remote_address, remote_port);
 	}
-
-	private void safeSendData(int SYN, int FIN, int ACK, InetAddress address, int port, byte[] data) {
-		TCPPacket seg = new TCPPacket(mtu, seq_num, ack_num, SYN, FIN, ACK);
-		seg.addData(data);
-		seq_num += seg.getLength();
-		SafeSender sender = new SafeSender(seg, address, port);
-		sender.start();
-		sendQ.offer(seg);
-	}
 }

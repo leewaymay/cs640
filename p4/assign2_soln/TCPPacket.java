@@ -84,7 +84,11 @@ public class TCPPacket {
 	}
 
 	public boolean isACK() {
-		return this.ACK == 1;
+		return this.ACK == 1 && this.length != 0;
+	}
+
+	public boolean isDATA() {
+		return this.ACK == 1 && this.length == 0;
 	}
 
 	public synchronized void setStatus(Status s) {
@@ -104,6 +108,7 @@ public class TCPPacket {
 		ByteBuffer bb = ByteBuffer.wrap(tcp_seg);
 		bb.putInt(seq);
 		bb.putInt(ack);
+		this.timeStamp = segTimeStamp;
 		bb.putLong(segTimeStamp);
 		int length_flags = length << 3 | SYN << 2 | FIN << 1 | ACK;
 		bb.putInt(length_flags);
@@ -135,7 +140,12 @@ public class TCPPacket {
 		this.checksum = (short)0;
 	}
 
-	public String print_msg() {
-		return String.format("seq:%d, ack=%d, SYN:%d, FIN:%d, ACK:%d", seq, ack, SYN, FIN, ACK);
+	public String print_msg(long startTime) {
+		char[] flag_list = new char[4];
+		flag_list[0] = isSYN() ? 'S' : '-';
+		flag_list[1] = isACK() ? 'A' : '-';
+		flag_list[2] = isFIN() ? 'F' : '-';
+		flag_list[0] = isDATA() ? 'D' : '-';
+		return String.format("%f %s %d %d, %d", (System.nanoTime() - startTime) / 1e6, String.valueOf(flag_list), seq, length, ack);
 	}
 }
