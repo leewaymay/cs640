@@ -165,7 +165,6 @@ public class TCPThread extends Thread {
 					break;
 				}
 				long TO = getTO();
-				System.out.println("Current timeout: " + TO);
 				try {
 					Thread.sleep(TO/1000000);
 				} catch (InterruptedException e) {
@@ -385,6 +384,7 @@ public class TCPThread extends Thread {
 			edev = (long) (B*edev + (1 - B)*sdev);
 			timeOUT = ertt + 4*edev;
 		}
+		System.out.println("new timeout: " + timeOUT/1e9);
 	}
 	
 }
