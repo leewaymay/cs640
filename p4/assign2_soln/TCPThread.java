@@ -168,8 +168,6 @@ public class TCPThread extends Thread {
 						connected = true;
 						remote_address = out_address;
 						remote_port = out_port;
-					} else if (seg.isFIN()) {
-						new CloseConnect().start();
 					}
 				} else {
 					remainTimes--;
