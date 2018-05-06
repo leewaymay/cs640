@@ -260,7 +260,6 @@ public class TCPThread extends Thread {
 				tcpPacket.cal_checksum();
 				boolean correctChecksum = (old_cks == tcpPacket.getChecksum());
 				if (!correctChecksum) {
-					System.out.println("wrong checksum!");
 					wrongChecksum++;
 				} else {
 					// If get later acks, all the previous ack should be acknowledged.
@@ -323,8 +322,8 @@ public class TCPThread extends Thread {
 								if (!connected) connected = true;
 								if (tcpPacket.getSeq() > ack_num + (sws-1)*(mtu-TCPPacket.header_sz)) {
 									// drop the packet
-									System.out.println("dropped packet:" + tcpPacket.getSeq());
 									outOfSeq++;
+									sendAck(tcpPacket, packet.getAddress(), packet.getPort());
 								} else if (tcpPacket.getSeq() == ack_num) {
 									recordData(tcpPacket, packet.getAddress(), packet.getPort());
 									// swipe the receiveQ

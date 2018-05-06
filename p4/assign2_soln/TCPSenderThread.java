@@ -113,7 +113,6 @@ public class TCPSenderThread extends TCPThread {
 	private void startClose() {
 		if (!sentFIN) {
 			sentFIN = true;
-			System.out.println("sending a FIN to close!");
 			safeSend(0, 1, 0, remote_address, remote_port, System.nanoTime());
 		}
 	}
