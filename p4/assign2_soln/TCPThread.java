@@ -165,6 +165,7 @@ public class TCPThread extends Thread {
 					break;
 				}
 				long TO = getTO();
+				System.out.println("Current timeout: " + TO);
 				try {
 					Thread.sleep(TO/1000000);
 				} catch (InterruptedException e) {
