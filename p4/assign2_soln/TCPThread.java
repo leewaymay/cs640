@@ -118,11 +118,13 @@ public class TCPThread extends Thread {
 		private int out_port;
 		private int remainTimes;
 		private boolean successfullySent;
+		private int maxTimes;
 
 		public SafeSender(TCPPacket tcpPacket, InetAddress out_address, int out_port, int maxTimes) {
 			this.seg = tcpPacket;
 			this.out_address = out_address;
 			this.out_port = out_port;
+			this.maxTimes = maxTimes;
 			this.remainTimes = maxTimes;
 			this.successfullySent = false;
 			seg.setStatus(TCPPacket.Status.Sent);
@@ -145,7 +147,7 @@ public class TCPThread extends Thread {
 				try {
 					socket.send(packet);
 					packetSent++;
-					if (remainTimes != MAX_RESENT) {
+					if (remainTimes != maxTimes) {
 						System.out.println("Retransmit");
 						retranTime++;
 					}
