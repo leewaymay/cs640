@@ -159,7 +159,6 @@ public class TCPThread extends Thread {
 					socket.send(packet);
 					packetSent++;
 					if (remainTimes != maxTimes) {
-						System.out.println("Retransmit");
 						retranTime++;
 					}
 					System.out.println("snd " + print_seg(seg));
@@ -210,8 +209,6 @@ public class TCPThread extends Thread {
 			customize_close();
 			// close the incoming monitor
 			incomingMonitor.interrupt();
-
-			System.out.println("closing connection!");
 			socket.close();
 			// reset the flags
 			connected = false;
@@ -226,7 +223,6 @@ public class TCPThread extends Thread {
 	}
 
 	protected void fastRetransmit(SafeSender sender) {
-		System.out.println("Fast retransmission.");
 		TCPPacket p = sender.getTcpSeg();
 		if (p.getStatus() == TCPPacket.Status.Sent) {
 			// This packet is still being transmitted
@@ -366,7 +362,6 @@ public class TCPThread extends Thread {
 					}
 				}
 			}
-			System.out.println("Stop running packet receiver thread...");
 		}
 	}
 

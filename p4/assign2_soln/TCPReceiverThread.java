@@ -52,6 +52,12 @@ public class TCPReceiverThread extends TCPThread {
 
 	@Override
 	protected void customize_close() {
+		System.out.println("Amount of Data Received:                   " + dataReceived);
+		System.out.println("Amount of Packets Received:                " + packetReceived);
+		System.out.println("No of Packets discarded (out of sequence): " + outOfSeq);
+		System.out.println("No of Packets discarded (wrong checksum):  " + wrongChecksum);
+		System.out.println("No of Retransmissions:                     " + retranTime);
+		System.out.println("No of Duplicate Acknowledgements:          " + dupAck);
 		// flush output
 		if (out != null) {
 			out.flush();
@@ -66,8 +72,8 @@ public class TCPReceiverThread extends TCPThread {
 			// File (or directory) with new name
 			File file2 = new File(this.received_filename);
 
-			if (file2.exists())
-				System.out.println("Overwrite existing files.");
+//			if (file2.exists())
+//				System.out.println("Overwrite existing files.");
 
 			// Rename file (or directory)
 			boolean success = file.renameTo(file2);

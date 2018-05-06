@@ -117,4 +117,14 @@ public class TCPSenderThread extends TCPThread {
 			safeSend(0, 1, 0, remote_address, remote_port, System.nanoTime());
 		}
 	}
+
+	@Override
+	protected void customize_close() {
+		System.out.println("Amount of Data Transferred:                " + dataSent);
+		System.out.println("Amount of Packets Sent:                    " + packetSent);
+		System.out.println("No of Packets discarded (out of sequence): " + outOfSeq);
+		System.out.println("No of Packets discarded (wrong checksum):  " + wrongChecksum);
+		System.out.println("No of Retransmissions:                     " + retranTime);
+		System.out.println("No of Duplicate Acknowledgements:          " + dupAck);
+	}
 }
