@@ -178,9 +178,8 @@ public class TCPThread extends Thread {
 						connected = true;
 						remote_address = out_address;
 						remote_port = out_port;
-					} else if (seg.isFIN() && !closed) {
+					} else if (seg.isFIN()) {
 						closed = true;
-						System.out.println("Call close from sender");
 						new CloseConnect().start();
 					}
 				} else {
@@ -307,8 +306,6 @@ public class TCPThread extends Thread {
 							closed = true;
 							ack_num = tcpPacket.getSeq() + 1;
 							sendAck(tcpPacket, packet.getAddress(), packet.getPort());
-							System.out.println("Call close from packet monitor");
-							new CloseConnect().start();
 						}
 
 					} else if (tcpPacket.isSYN()){
