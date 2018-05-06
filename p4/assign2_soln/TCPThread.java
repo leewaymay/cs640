@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.net.*;
+import java.util.concurrent.PriorityBlockingQueue;
 
 public class TCPThread extends Thread {
 	protected volatile boolean connected = false;
@@ -36,6 +37,7 @@ public class TCPThread extends Thread {
 	protected int dupAck = 0;
 	protected ArrayDeque<TCPPacket> sendQ;
 	protected PriorityQueue<TCPPacket> receiveQ;
+	protected PriorityBlockingQueue<TCPPacket> unAckedQ;
 	protected boolean moreData = false;
 	protected long startTime = System.nanoTime();
 	protected TCPPacket sentSYN;
@@ -122,11 +124,8 @@ public class TCPThread extends Thread {
 			this.remainTimes = maxTimes;
 			this.successfullySent = false;
 			seg.setStatus(TCPPacket.Status.Sent);
-			if (seg.getLength() == 0) {
-				sentTCPs.put(seg.getSeq()+1, seg);
-			} else {
-				sentTCPs.put(seg.getSeq()+seg.getLength(), seg);
-			}
+			sentTCPs.put(seg.getExpAck(), seg);
+			unAckedQ.add(seg);
 		}
 
 		public TCPPacket getTcpSeg() {
@@ -253,15 +252,22 @@ public class TCPThread extends Thread {
 				// DO not drop the timeout packet
 				// Don't use the timeout for calculation
 				if (correctChecksum) {
+					// If get later acks, all the previous ack should be acknowledged.
+					if (tcpPacket.isACK() || tcpPacket.isDATA()) {
+						while (unAckedQ.size() > 0 && unAckedQ.peek().getExpAck() <= tcpPacket.getAck()) {
+							TCPPacket sent  = unAckedQ.poll();
+							sent.setStatus(TCPPacket.Status.Ack);
+						}
+					}
 					if (tcpPacket.isACK()) {
 						// TODO Update timeout
 						if (!tcpPacket.isSYN() && !tcpPacket.isFIN()) {
 							if (connected) sendData();
 						}
-						// lookup sent TCPs
+						// check duplicate acks
 						if (sentTCPs.containsKey(tcpPacket.getAck())) {
 							TCPPacket sent = sentTCPs.get(tcpPacket.getAck());
-							sent.setStatus(TCPPacket.Status.Ack);
+							//sent.setStatus(TCPPacket.Status.Ack);
 							int num_acked = sent.increaseAckTimes();
 							if (num_acked == 4) {
 								// received three duplicate acks

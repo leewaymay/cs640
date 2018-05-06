@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.PriorityBlockingQueue;
 
 public class TCPSenderThread extends TCPThread {
 
@@ -26,6 +27,12 @@ public class TCPSenderThread extends TCPThread {
 		this.mtu = mtu;
 		this.sws = sws;
 		this.sendQ = new ArrayDeque<>(sws);
+		this.unAckedQ = new PriorityBlockingQueue<>(sws, new Comparator<TCPPacket>() {
+			@Override
+			public int compare(TCPPacket tcpPacket, TCPPacket t1) {
+				return tcpPacket.getExpAck() - t1.getExpAck();
+			}
+		});
 
 		try {
 			in = new BufferedInputStream(new FileInputStream(filename));

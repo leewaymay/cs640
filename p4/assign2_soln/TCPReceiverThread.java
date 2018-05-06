@@ -2,6 +2,7 @@ import java.io.*;
 import java.net.*;
 import java.util.Comparator;
 import java.util.PriorityQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 
 public class TCPReceiverThread extends TCPThread {
 
@@ -23,6 +24,12 @@ public class TCPReceiverThread extends TCPThread {
 			@Override
 			public int compare(TCPPacket tcpPacket, TCPPacket t1) {
 				return tcpPacket.getSeq()-t1.getSeq();
+			}
+		});
+		this.unAckedQ = new PriorityBlockingQueue<>(sws, new Comparator<TCPPacket>() {
+			@Override
+			public int compare(TCPPacket tcpPacket, TCPPacket t1) {
+				return tcpPacket.getExpAck() - t1.getExpAck();
 			}
 		});
 

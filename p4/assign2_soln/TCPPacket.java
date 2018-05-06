@@ -59,6 +59,11 @@ public class TCPPacket implements Cloneable{
 		return this.ack_times;
 	}
 
+	public int getExpAck() {
+		int len = isSYN()||isFIN() ? 1 : this.length;
+		return this.seq + len;
+	}
+
 	public void resetAckTimes() {
 		this.ack_times = 0;
 	}
@@ -149,11 +154,12 @@ public class TCPPacket implements Cloneable{
 	}
 
 	public String print_msg(long startTime) {
-		char[] flag_list = new char[4];
+		char[] flag_list = new char[7];
+		Arrays.fill(flag_list, ' ');
 		flag_list[0] = isSYN() ? 'S' : '-';
-		flag_list[1] = isACK() ? 'A' : '-';
-		flag_list[2] = isFIN() ? 'F' : '-';
-		flag_list[3] = isDATA() ? 'D' : '-';
-		return String.format("%.3f %s %d %d %d", (System.nanoTime() - startTime) / 1e9, String.valueOf(flag_list), seq, length, ack);
+		flag_list[2] = isACK() ? 'A' : '-';
+		flag_list[4] = isFIN() ? 'F' : '-';
+		flag_list[6] = isDATA() ? 'D' : '-';
+		return String.format("%.3f %s %d %d %d", (System.nanoTime() - startTime) / 1e6, String.valueOf(flag_list), seq, length, ack);
 	}
 }
