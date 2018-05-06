@@ -103,13 +103,15 @@ public class TCPSenderThread extends TCPThread {
 				}
 			}
 			// when finished sending data, send FIN to close the transfer
-			if (!moreData && !needSendFilename && sendQ.size() == 0 && !sentFIN) startClose();
+			if (!moreData && !needSendFilename && sendQ.size() == 0) startClose();
 		}
 	}
 
 	private void startClose() {
-		System.out.println("sending a FIN to close!");
-		safeSend(0, 1, 0, remote_address, remote_port);
-		sentFIN = true;
+		if (!sentFIN) {
+			System.out.println("sending a FIN to close!");
+			safeSend(0, 1, 0, remote_address, remote_port);
+			sentFIN = true;
+		}
 	}
 }
