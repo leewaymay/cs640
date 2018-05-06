@@ -286,9 +286,6 @@ public class TCPThread extends Thread {
 							if (!receivedSYN) ack_num = tcpPacket.getSeq() + 1;
 							receivedSYN = true;
 							connected = true;
-							if (sentSYN != null && sentSYN.getStatus() == TCPPacket.Status.Sent) {
-								sentSYN.setStatus(TCPPacket.Status.Ack);
-							}
 							sendAck(tcpPacket.getSeq() + 1, tcpPacket, packet.getAddress(), packet.getPort());
 							// have set up the connection, can send data now.
 							sendData();
@@ -310,10 +307,6 @@ public class TCPThread extends Thread {
 						ack_num = tcpPacket.getSeq() + 1;
 						safeSend(0, 1, 1, packet.getAddress(), packet.getPort(), 3);
 					} else if (tcpPacket.isDATA()) {
-						// in case the ACK for SYN+ACK is lost, mark the SYN+ACK is obtained
-						if (sentSYN != null && sentSYN.getStatus() == TCPPacket.Status.Sent) {
-							sentSYN.setStatus(TCPPacket.Status.Ack);
-						}
 						// when receivedSYN and packet has data, record data now
 						if (receivedSYN && receiveQ != null) {
 							synchronized (receiveQ) {
