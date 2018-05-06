@@ -194,7 +194,7 @@ public class TCPThread extends Thread {
 					System.err.println("Maximum number of retransmission has reached! Still cannot send. Stop sending!");
 				}
 				seg.setStatus(TCPPacket.Status.Lost);
-				new CloseConnect().start();
+//				new CloseConnect().start();
 			}
 		}
 	}
