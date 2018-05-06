@@ -47,6 +47,8 @@ public class TCPThread extends Thread {
 	protected boolean moreData = false;
 	protected long startTime = System.nanoTime();
 
+	protected volatile boolean firstUpdateTO = true;
+
 	
 	public void run() {
 		// do nothing
@@ -373,7 +375,8 @@ public class TCPThread extends Thread {
 	}
 
 	private void updateTimeOut(TCPPacket ackPacket) {
-		if (ackPacket.getSeq() == 0) {
+		if (firstUpdateTO || ackPacket.getSeq() == 0) {
+			firstUpdateTO = false;
 			ertt = System.nanoTime() - ackPacket.getTimeStamp();
 			edev = 0;
 			timeOUT = 2*ertt;
@@ -383,9 +386,7 @@ public class TCPThread extends Thread {
 			ertt = (long) (A*ertt + (1 - A)*srtt);
 			edev = (long) (B*edev + (1 - B)*sdev);
 			timeOUT = ertt + 4*edev;
-			System.out.println("srtt: " + srtt/1e9 + " sdev: " + sdev/1e9 + " ertt: " + ertt/1e9 + "edev: " + edev/1e9);
 		}
-		System.out.println("new timeout: " + timeOUT/1e9);
 	}
 	
 }
