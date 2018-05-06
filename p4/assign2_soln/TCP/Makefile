@@ -1,13 +1,13 @@
+Source=src/
+Bin=./
+
+
 all: TCPend.class
-TCPThread.class: TCPThread.java TCPPacket.class
-	javac TCPThread.java
-TCPSenderThread.class: TCPSenderThread.java TCPPacket.class TCPThread.class
-	javac TCPSenderThread.java
-TCPReceiverThread.class: TCPReceiverThread.java TCPPacket.class TCPThread.class
-	javac TCPReceiverThread.java
-TCPPacket.class: TCPPacket.java
-	javac TCPPacket.java
-TCPend.class: TCPend.java TCPSenderThread.class TCPReceiverThread.class
-	javac TCPend.java
+TCPend.class: $(Source)TCPend.java $(Source)TCPThread.java $(Source)TCPSenderThread.java $(Source)TCPReceiverThread.java $(Source)TCPPacket.java
+	javac $(Source)TCPPacket.java -d $(Bin)
+	javac $(Source)TCPThread.java -d $(Bin)
+	javac $(Source)TCPSenderThread.java -d $(Bin)
+	javac $(Source)TCPReceiverThread.java -d $(Bin)
+	javac $(Source)TCPend.java -d $(Bin)
 clean:
-	rm *.class
+	rm $(Bin)*.class
