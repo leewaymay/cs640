@@ -24,6 +24,7 @@ public class TCPThread extends Thread {
 	protected int port;
 	protected int mtu;
 	protected int sws;
+	protected volatile int initial_seq_num = 0;
 	protected volatile int seq_num = 0;
 	protected volatile int ack_num = 0;
 
@@ -40,7 +41,6 @@ public class TCPThread extends Thread {
 	protected PriorityBlockingQueue<TCPPacket> unAckedQ;
 	protected boolean moreData = false;
 	protected long startTime = System.nanoTime();
-	protected TCPPacket sentSYN;
 
 	
 	public void run() {
@@ -79,15 +79,17 @@ public class TCPThread extends Thread {
 
 	protected void safeSendData(int SYN, int FIN, int ACK, InetAddress address, int port, int maxTimes, byte[] data) {
 		TCPPacket seg = new TCPPacket(mtu, seq_num, ack_num, SYN, FIN, ACK);
-		if (SYN == 1 || FIN == 1) {
-			seq_num++;
-		}
+
 		if (data != null && data.length > 0) {
 			seg.addData(data);
 			seq_num += seg.getLength();
 			if (sendQ != null) sendQ.offer(seg);
 		}
-		if (SYN == 1 && sentSYN == null) sentSYN = seg;
+		if (SYN == 1) {
+			seq_num = initial_seq_num + 1;
+		} else if (FIN == 1) {
+			seq_num ++;
+		}
 
 		SafeSender sender = new SafeSender(seg, address, port, maxTimes);
 		sender.start();

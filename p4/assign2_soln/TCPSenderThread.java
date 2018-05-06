@@ -8,6 +8,7 @@ public class TCPSenderThread extends TCPThread {
 	private BufferedInputStream in = null;
 	private String filename = null;
 	private boolean needSendFilename = true;
+	private volatile boolean sentFIN = false;
 
 	public TCPSenderThread(int port, String remote_IP, int remote_port, String filename, int mtu, int sws) {
 		this.port = port;
@@ -102,12 +103,13 @@ public class TCPSenderThread extends TCPThread {
 				}
 			}
 			// when finished sending data, send FIN to close the transfer
-			if (!moreData && !needSendFilename && sendQ.size() == 0) startClose();
+			if (!moreData && !needSendFilename && sendQ.size() == 0 && !sentFIN) startClose();
 		}
 	}
 
 	private void startClose() {
 		System.out.println("sending a FIN to close!");
 		safeSend(0, 1, 0, remote_address, remote_port);
+		sentFIN = true;
 	}
 }

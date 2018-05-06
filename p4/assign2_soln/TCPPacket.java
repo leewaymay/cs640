@@ -160,6 +160,6 @@ public class TCPPacket implements Cloneable{
 		flag_list[2] = isACK() ? 'A' : '-';
 		flag_list[4] = isFIN() ? 'F' : '-';
 		flag_list[6] = isDATA() ? 'D' : '-';
-		return String.format("%.3f %s %d %d %d", (System.nanoTime() - startTime) / 1e6, String.valueOf(flag_list), seq, length, ack);
+		return String.format("%.3f %s %d %d %d", (System.nanoTime() - startTime) / 1e9, String.valueOf(flag_list), seq, length, ack);
 	}
 }
