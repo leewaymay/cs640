@@ -38,6 +38,7 @@ public class TCPThread extends Thread {
 	protected PriorityQueue<TCPPacket> receiveQ;
 	protected boolean moreData = false;
 	protected long startTime = System.nanoTime();
+	protected TCPPacket sentSYN;
 
 	
 	public void run() {
@@ -84,6 +85,8 @@ public class TCPThread extends Thread {
 			seq_num += seg.getLength();
 			if (sendQ != null) sendQ.offer(seg);
 		}
+		if (SYN == 1 && sentSYN == null) sentSYN = seg;
+
 		SafeSender sender = new SafeSender(seg, address, port, maxTimes);
 		sender.start();
 		tcpSenders.put(seg.getSeq(), sender);
@@ -270,17 +273,20 @@ public class TCPThread extends Thread {
 							}
 						}
 
-						if (tcpPacket.isSYN()) {
+						if (tcpPacket.isSYN() && !connected) {
+							// set ack_num to received packet seq_num + 1
+							if (!receivedSYN) ack_num = tcpPacket.getSeq() + 1;
 							receivedSYN = true;
 							connected = true;
-							// set ack_num to received packet seq_num + 1
-							ack_num = tcpPacket.getSeq() + 1;
-							sendAck(tcpPacket, packet.getAddress(), packet.getPort());
+							if (sentSYN != null && sentSYN.getStatus() == TCPPacket.Status.Sent) {
+								sentSYN.setStatus(TCPPacket.Status.Ack);
+							}
+							sendAck(tcpPacket.getSeq() + 1, tcpPacket, packet.getAddress(), packet.getPort());
 							// have set up the connection, can send data now.
 							sendData();
 						}
 						// when received FIN+ACK
-						if (tcpPacket.isFIN()) {
+						if (tcpPacket.isFIN() && !closed) {
 							receivedFIN = true;
 							ack_num = tcpPacket.getSeq() + 1;
 							sendAck(tcpPacket, packet.getAddress(), packet.getPort());
@@ -296,6 +302,10 @@ public class TCPThread extends Thread {
 						ack_num = tcpPacket.getSeq() + 1;
 						safeSend(0, 1, 1, packet.getAddress(), packet.getPort(), 3);
 					} else if (tcpPacket.isDATA()) {
+						// in case the ACK for SYN+ACK is lost, mark the SYN+ACK is obtained
+						if (sentSYN != null && sentSYN.getStatus() == TCPPacket.Status.Sent) {
+							sentSYN.setStatus(TCPPacket.Status.Ack);
+						}
 						// when receivedSYN and packet has data, record data now
 						if (receivedSYN && receiveQ != null) {
 							synchronized (receiveQ) {
