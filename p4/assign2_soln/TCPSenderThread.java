@@ -97,6 +97,9 @@ public class TCPSenderThread extends TCPThread {
 						}
 						if (res < buf.length) {
 							moreData = false;
+							if (res > 0) {
+								buf = Arrays.copyOfRange(buf, 0, res);
+							}
 						}
 						if (res > 0) safeSendData(0, 0, 1, remote_address, remote_port, buf);
 					}
@@ -109,9 +112,9 @@ public class TCPSenderThread extends TCPThread {
 
 	private void startClose() {
 		if (!sentFIN) {
+			sentFIN = true;
 			System.out.println("sending a FIN to close!");
 			safeSend(0, 1, 0, remote_address, remote_port);
-			sentFIN = true;
 		}
 	}
 }

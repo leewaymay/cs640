@@ -60,7 +60,6 @@ public class TCPThread extends Thread {
 			System.out.println("snd " + print_seg(seg));
 			packetSent++;
 		} catch (IOException e) {
-			System.out.println("Socket is closed!");
 		}
 	}
 
@@ -153,14 +152,12 @@ public class TCPThread extends Thread {
 					}
 					System.out.println("snd " + print_seg(seg));
 				} catch (IOException e) {
-					System.out.println("Socket is closed!");
 					break;
 				}
 				long TO = getTO();
 				try {
 					Thread.sleep(TO/1000000);
 				} catch (InterruptedException e) {
-					System.out.println("sender get interrupted");
 					return;
 				}
 				//check whether this packet has been acknowledged

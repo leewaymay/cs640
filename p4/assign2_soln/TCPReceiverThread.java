@@ -82,7 +82,12 @@ public class TCPReceiverThread extends TCPThread {
 	protected void writeData(TCPPacket tcpPacket) {
 		byte[] data = tcpPacket.getData();
 		String s = new String(data,0, tcpPacket.getLength());
-		// TODO keep a buffered window and write to text, implement it in child class
-		System.out.println("\n*** seq: " + tcpPacket.getSeq() + " *****\n" + s + "\n************\n");
+//		System.out.println("\n*** seq: " + tcpPacket.getSeq() + " *****\n" + s + "\n************\n");
+		if (tcpPacket.getSeq() == 1) {
+			// this is the filename
+			received_filename = s;
+		} else {
+			out.print(s);
+		}
 	}
 }
