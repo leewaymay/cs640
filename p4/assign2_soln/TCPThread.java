@@ -14,6 +14,8 @@ public class TCPThread extends Thread {
 	protected static final int MAX_RESENT = 16;
 
 	protected volatile long timeOUT = (long)5*1000*1000*1000;
+	protected volatile long ertt = (long)5*1000*1000*1000;
+	protected volatile long edev = (long)0;
 	protected ConcurrentHashMap<Integer, TCPPacket> sentTCPs = new ConcurrentHashMap<>();
 	protected ConcurrentHashMap<Integer, SafeSender> tcpSenders = new ConcurrentHashMap<>();
 	protected IncomingMonitor incomingMonitor;
@@ -27,6 +29,9 @@ public class TCPThread extends Thread {
 	protected volatile int initial_seq_num = 0;
 	protected volatile int seq_num = 0;
 	protected volatile int ack_num = 0;
+
+	protected final static double A = 0.875;
+	protected final static double B = 0.75;
 
 	protected long dataSent = 0;
 	protected long dataReceived = 0;
@@ -64,19 +69,20 @@ public class TCPThread extends Thread {
 	}
 
 
-	protected void safeSend(int SYN, int FIN, int ACK, InetAddress address, int port) {
-		safeSendData(SYN, FIN, ACK, address, port, MAX_RESENT, null);
+	protected void safeSend(int SYN, int FIN, int ACK, InetAddress address, int port, long timeStamp) {
+		safeSendData(SYN, FIN, ACK, address, port, MAX_RESENT, null, timeStamp);
 	}
 
-	protected void safeSend(int SYN, int FIN, int ACK, InetAddress address, int port, int maxTimes) {
-		safeSendData(SYN, FIN, ACK, address, port, maxTimes, null);
+	protected void safeSend(int SYN, int FIN, int ACK, InetAddress address, int port, int maxTimes, long timeStamp) {
+		safeSendData(SYN, FIN, ACK, address, port, maxTimes, null, timeStamp);
 	}
 
-	protected void safeSendData(int SYN, int FIN, int ACK, InetAddress address, int port, byte[] data) {
-		safeSendData(SYN, FIN, ACK, address, port, MAX_RESENT, data);
+
+	protected void safeSendData(int SYN, int FIN, int ACK, InetAddress address, int port, byte[] data, long timeStamp) {
+		safeSendData(SYN, FIN, ACK, address, port, MAX_RESENT, data, timeStamp);
 	}
 
-	protected void safeSendData(int SYN, int FIN, int ACK, InetAddress address, int port, int maxTimes, byte[] data) {
+	protected void safeSendData(int SYN, int FIN, int ACK, InetAddress address, int port, int maxTimes, byte[] data, long timeStamp) {
 		TCPPacket seg = new TCPPacket(mtu, seq_num, ack_num, SYN, FIN, ACK);
 
 		if (data != null && data.length > 0) {
@@ -90,9 +96,10 @@ public class TCPThread extends Thread {
 			seq_num ++;
 		}
 
-		SafeSender sender = new SafeSender(seg, address, port, maxTimes);
+		SafeSender sender = new SafeSender(seg, address, port, maxTimes, timeStamp);
 		sender.start();
 		tcpSenders.put(seg.getSeq(), sender);
+		dataSent += seg.getLength();
 	}
 
 	protected void sendData() {
@@ -103,6 +110,7 @@ public class TCPThread extends Thread {
 	protected void recordData(TCPPacket tcpPacket,  InetAddress address, int port) {
 		ack_num = tcpPacket.getSeq() + tcpPacket.getLength();
 		sendAck(tcpPacket, address, port);
+		dataReceived += tcpPacket.getLength();
 		writeData(tcpPacket);
 	}
 
@@ -118,8 +126,9 @@ public class TCPThread extends Thread {
 		private int remainTimes;
 		private boolean successfullySent;
 		private int maxTimes;
+		private long timeStamp;
 
-		public SafeSender(TCPPacket tcpPacket, InetAddress out_address, int out_port, int maxTimes) {
+		public SafeSender(TCPPacket tcpPacket, InetAddress out_address, int out_port, int maxTimes, long timeStamp) {
 			this.seg = tcpPacket;
 			this.out_address = out_address;
 			this.out_port = out_port;
@@ -129,6 +138,7 @@ public class TCPThread extends Thread {
 			seg.setStatus(TCPPacket.Status.Sent);
 			sentTCPs.put(seg.getExpAck(), seg);
 			unAckedQ.add(seg);
+			this.timeStamp = timeStamp;
 		}
 
 		public TCPPacket getTcpSeg() {
@@ -136,12 +146,12 @@ public class TCPThread extends Thread {
 		}
 
 		public SafeSender makeClone() {
-			return new SafeSender(seg, out_address, out_port, remainTimes);
+			return new SafeSender(seg, out_address, out_port, remainTimes, timeStamp);
 		}
 
 		public void run() {
 			while (!Thread.interrupted() && !successfullySent && remainTimes > 0) {
-				byte[] buf = seg.serialize();
+				byte[] buf = seg.isACK() ? seg.serialize(timeStamp) : seg.serialize();
 				DatagramPacket packet = new DatagramPacket(buf, buf.length, out_address, out_port);
 				try {
 					socket.send(packet);
@@ -222,6 +232,7 @@ public class TCPThread extends Thread {
 			sender.interrupt();
 			SafeSender newSender = sender.makeClone();
 			tcpSenders.put(p.getSeq(), newSender);
+			retranTime++;
 			newSender.start();
 		}
 		if (p.getStatus() == TCPPacket.Status.Ack) {
@@ -242,18 +253,18 @@ public class TCPThread extends Thread {
 					socket.receive(packet);
 					packetReceived++;
 				} catch (IOException e) {
-					System.out.println("Socket is closed!");
 					break;
 				}
 				byte[] received = packet.getData();
 				tcpPacket.deserialize(received);
 				System.out.println("rcv " + print_seg(tcpPacket));
-				// TODO compute checksum
-				boolean correctChecksum = true;
-
-				// DO not drop the timeout packet
-				// Don't use the timeout for calculation
-				if (correctChecksum) {
+				short old_cks = tcpPacket.getChecksum();
+				tcpPacket.cal_checksum();
+				boolean correctChecksum = (old_cks == tcpPacket.getChecksum());
+				if (!correctChecksum) {
+					System.out.println("wrong checksum!");
+					wrongChecksum++;
+				} else {
 					// If get later acks, all the previous ack should be acknowledged.
 					if (tcpPacket.isACK() || tcpPacket.isDATA()) {
 						while (unAckedQ.size() > 0 && unAckedQ.peek().getExpAck() <= tcpPacket.getAck()) {
@@ -262,7 +273,7 @@ public class TCPThread extends Thread {
 						}
 					}
 					if (tcpPacket.isACK()) {
-						// TODO Update timeout
+						updateTimeOut(tcpPacket);
 						if (!tcpPacket.isSYN() && !tcpPacket.isFIN()) {
 							if (connected) sendData();
 						}
@@ -271,6 +282,7 @@ public class TCPThread extends Thread {
 							TCPPacket sent = sentTCPs.get(tcpPacket.getAck());
 							//sent.setStatus(TCPPacket.Status.Ack);
 							int num_acked = sent.increaseAckTimes();
+							if (num_acked > 1) dupAck++;
 							if (num_acked == 4) {
 								// received three duplicate acks
 								// fast retransmission
@@ -302,11 +314,11 @@ public class TCPThread extends Thread {
 					} else if (tcpPacket.isSYN()){
 						receivedSYN = true;
 						ack_num = tcpPacket.getSeq() + 1;
-						safeSend(1, 0, 1, packet.getAddress(), packet.getPort());
+						safeSend(1, 0, 1, packet.getAddress(), packet.getPort(), tcpPacket.getTimeStamp());
 					} else if (tcpPacket.isFIN()) {
 						receivedFIN = true;
 						ack_num = tcpPacket.getSeq() + 1;
-						safeSend(0, 1, 1, packet.getAddress(), packet.getPort(), 3);
+						safeSend(0, 1, 1, packet.getAddress(), packet.getPort(), 3, tcpPacket.getTimeStamp());
 					} else if (tcpPacket.isDATA()) {
 						// when receivedSYN and packet has data, record data now
 						if (receivedSYN && receiveQ != null) {
@@ -358,6 +370,20 @@ public class TCPThread extends Thread {
 
 	private String print_seg(TCPPacket seg) {
 		return seg.print_msg(startTime);
+	}
+
+	private void updateTimeOut(TCPPacket ackPacket) {
+		if (ackPacket.getSeq() == 0) {
+			ertt = System.nanoTime() - ackPacket.getTimeStamp();
+			edev = 0;
+			timeOUT = 2*ertt;
+		} else {
+			long srtt = System.nanoTime() - ackPacket.getTimeStamp();
+			long sdev = Math.abs(srtt - ertt);
+			ertt = (long) (A*ertt + (1 - A)*srtt);
+			edev = (long) (B*edev + (1 - B)*sdev);
+			timeOUT = ertt + 4*edev;
+		}
 	}
 	
 }

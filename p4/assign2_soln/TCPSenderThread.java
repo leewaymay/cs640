@@ -63,7 +63,7 @@ public class TCPSenderThread extends TCPThread {
 
 	private void connect_remote() {
 		System.out.println("sending a SYN to connect!");
-		safeSend(1, 0, 0, remote_address, remote_port);
+		safeSend(1, 0, 0, remote_address, remote_port, System.nanoTime());
 	}
 
 
@@ -85,7 +85,7 @@ public class TCPSenderThread extends TCPThread {
 					// can send data
 					if (needSendFilename) {
 						byte[] buf = filename.getBytes();
-						safeSendData(0, 0, 1, remote_address, remote_port, buf);
+						safeSendData(0, 0, 1, remote_address, remote_port, buf, System.nanoTime());
 						needSendFilename = false;
 					} else {
 						byte[] buf = new byte[mtu - TCPPacket.header_sz];
@@ -101,7 +101,7 @@ public class TCPSenderThread extends TCPThread {
 								buf = Arrays.copyOfRange(buf, 0, res);
 							}
 						}
-						if (res > 0) safeSendData(0, 0, 1, remote_address, remote_port, buf);
+						if (res > 0) safeSendData(0, 0, 1, remote_address, remote_port, buf, System.nanoTime());
 					}
 				}
 			}
@@ -114,7 +114,7 @@ public class TCPSenderThread extends TCPThread {
 		if (!sentFIN) {
 			sentFIN = true;
 			System.out.println("sending a FIN to close!");
-			safeSend(0, 1, 0, remote_address, remote_port);
+			safeSend(0, 1, 0, remote_address, remote_port, System.nanoTime());
 		}
 	}
 }

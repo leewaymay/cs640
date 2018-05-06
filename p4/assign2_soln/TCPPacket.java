@@ -64,16 +64,16 @@ public class TCPPacket implements Cloneable{
 		return this.seq + len;
 	}
 
-	public void resetAckTimes() {
-		this.ack_times = 0;
-	}
-
 	public byte[] getData() {
 		return this.data;
 	}
 
 	public long getTimeStamp() {
 		return this.timeStamp;
+	}
+
+	public short getChecksum() {
+		return this.checksum;
 	}
 
 	public int getLength() {
@@ -126,7 +126,7 @@ public class TCPPacket implements Cloneable{
 		int length_flags = length << 3 | SYN << 2 | FIN << 1 | ACK;
 		bb.putInt(length_flags);
 		bb.putShort((short)0);
-		cal_checksum(bb);
+		cal_checksum();
 		bb.putShort(checksum);
 		bb.put(data);
 		return tcp_seg;
@@ -149,8 +149,13 @@ public class TCPPacket implements Cloneable{
 		return this;
 	}
 
-	private void cal_checksum(ByteBuffer bb) {
-		this.checksum = (short)0;
+	public void cal_checksum() {
+		int sum = ((seq >>> 16) & 0xffff) + (seq & 0xffff);
+		if ((sum >>> 16) == 1) {
+			sum &= 0xffff;
+			sum++;
+		}
+		this.checksum = (short)(~sum & 0xffff);
 	}
 
 	public String print_msg(long startTime) {
