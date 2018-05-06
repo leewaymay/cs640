@@ -180,6 +180,7 @@ public class TCPThread extends Thread {
 						remote_port = out_port;
 					} else if (seg.isFIN() && !closed) {
 						closed = true;
+						System.out.println("Call close from sender");
 						new CloseConnect().start();
 					}
 				} else {
@@ -194,7 +195,7 @@ public class TCPThread extends Thread {
 					System.err.println("Maximum number of retransmission has reached! Still cannot send. Stop sending!");
 				}
 				seg.setStatus(TCPPacket.Status.Lost);
-//				new CloseConnect().start();
+				new CloseConnect().start();
 			}
 		}
 	}
@@ -306,6 +307,7 @@ public class TCPThread extends Thread {
 							closed = true;
 							ack_num = tcpPacket.getSeq() + 1;
 							sendAck(tcpPacket, packet.getAddress(), packet.getPort());
+							System.out.println("Call close from packet monitor");
 							new CloseConnect().start();
 						}
 
