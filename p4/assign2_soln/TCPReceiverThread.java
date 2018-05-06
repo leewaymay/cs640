@@ -45,7 +45,6 @@ public class TCPReceiverThread extends TCPThread {
 
 	@Override
 	public void run() {
-		System.out.println("listening to a SYN packet for building connection");
 		// Start incoming monitor
 		incomingMonitor.start();
 	}

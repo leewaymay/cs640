@@ -20,7 +20,6 @@ public class TCPSenderThread extends TCPThread {
 		}
 		try {
 			remote_address = InetAddress.getByName(remote_IP);
-			System.out.println("The host address is " + remote_address.toString());
 		} catch (Exception e) {
 			System.err.println("wrong address given.");
 		}
@@ -62,7 +61,6 @@ public class TCPSenderThread extends TCPThread {
 	}
 
 	private void connect_remote() {
-		System.out.println("sending a SYN to connect!");
 		safeSend(1, 0, 0, remote_address, remote_port, System.nanoTime());
 	}
 
