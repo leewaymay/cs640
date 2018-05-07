@@ -176,14 +176,14 @@ public class TCPThread extends Thread {
 				}
 				//check whether this packet has been acknowledged
 				if (seg.getStatus() == TCPPacket.Status.Ack) {
-					System.out.println("Acked packet seq:" + seg.getSeq());
+					System.out.println("Timer acked packet seq:" + seg.getSeq());
 					successfullySent = true;
 					if (seg.isSYN()) {
 						connected = true;
 						remote_address = out_address;
 						remote_port = out_port;
 					} else if (seg.isFIN() && !closed) {
-						System.out.println("Acked packet FIN:" + seg.getSeq());
+						System.out.println("Timer acked packet FIN:" + seg.getSeq());
 						closed = true;
 						new CloseConnect().start();
 					}
@@ -202,6 +202,7 @@ public class TCPThread extends Thread {
 					}
 				}
 				seg.setStatus(TCPPacket.Status.Lost);
+				System.out.println("Lost a packet seq:" + seg.getSeq());
 				new CloseConnect().start();
 			}
 		}
