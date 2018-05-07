@@ -12,11 +12,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="TCPSenderThread.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="TCPSenderThread.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/assign2_soln/TCPSenderThread.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="543">
-              <caret line="100" column="44" lean-forward="true" selection-start-line="100" selection-start-column="44" selection-end-line="100" selection-end-column="44" />
+            <state relative-caret-position="237">
+              <caret line="77" column="95" lean-forward="false" selection-start-line="77" selection-start-column="95" selection-end-line="77" selection-end-column="95" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="e#948#949#0" expanded="true" />
@@ -120,7 +120,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="TCPThread.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="TCPThread.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/assign2_soln/TCPThread.java">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="619">
@@ -191,9 +191,9 @@
         <option value="$PROJECT_DIR$/assign2_soln/Makefile" />
         <option value="$PROJECT_DIR$/assign2_soln/TCP/Makefile" />
         <option value="$PROJECT_DIR$/assign2_soln/TCPPacket.java" />
-        <option value="$PROJECT_DIR$/assign2_soln/TCPSenderThread.java" />
         <option value="$PROJECT_DIR$/assign2_soln/TCPReceiverThread.java" />
         <option value="$PROJECT_DIR$/assign2_soln/TCPThread.java" />
+        <option value="$PROJECT_DIR$/assign2_soln/TCPSenderThread.java" />
       </list>
     </option>
   </component>
@@ -1138,22 +1138,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/assign2_soln/TCPSenderThread.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="543">
-          <caret line="100" column="44" lean-forward="true" selection-start-line="100" selection-start-column="44" selection-end-line="100" selection-end-column="44" />
-          <folding>
-            <element signature="imports" expanded="true" />
-            <element signature="e#948#949#0" expanded="true" />
-            <element signature="e#1004#1005#0" expanded="true" />
-            <element signature="e#1647#1648#0" expanded="true" />
-            <element signature="e#1719#1720#0" expanded="true" />
-            <element signature="e#1761#1762#0" expanded="true" />
-            <element signature="e#1811#1812#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/assign2_soln/TCPThread.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="619">
@@ -1168,6 +1152,22 @@
             <element signature="e#6651#6652#0" expanded="true" />
             <element signature="e#12103#12104#0" expanded="true" />
             <element signature="e#12141#12142#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/assign2_soln/TCPSenderThread.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="237">
+          <caret line="77" column="95" lean-forward="false" selection-start-line="77" selection-start-column="95" selection-end-line="77" selection-end-column="95" />
+          <folding>
+            <element signature="imports" expanded="true" />
+            <element signature="e#948#949#0" expanded="true" />
+            <element signature="e#1004#1005#0" expanded="true" />
+            <element signature="e#1647#1648#0" expanded="true" />
+            <element signature="e#1719#1720#0" expanded="true" />
+            <element signature="e#1761#1762#0" expanded="true" />
+            <element signature="e#1811#1812#0" expanded="true" />
           </folding>
         </state>
       </provider>
