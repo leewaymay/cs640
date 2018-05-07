@@ -84,6 +84,10 @@ public class TCPPacket implements Cloneable{
 		return this.seq;
 	}
 
+	public void setSeq(int seq_num) {
+		this.seq = seq_num;
+	}
+
 	public int getAck() {
 		return this.ack;
 	}

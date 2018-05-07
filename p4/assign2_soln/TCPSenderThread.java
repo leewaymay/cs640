@@ -8,7 +8,6 @@ public class TCPSenderThread extends TCPThread {
 	private BufferedInputStream in = null;
 	private String filename = null;
 	private boolean needSendFilename = true;
-	private volatile boolean sentFIN = false;
 
 	public TCPSenderThread(int port, String remote_IP, int remote_port, String filename, int mtu, int sws) {
 		this.port = port;
