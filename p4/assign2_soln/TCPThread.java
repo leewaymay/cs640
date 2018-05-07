@@ -272,6 +272,7 @@ public class TCPThread extends Thread {
 						while (unAckedQ.size() > 0 && unAckedQ.peek().getExpAck() <= tcpPacket.getAck()) {
 							TCPPacket sent  = unAckedQ.poll();
 							sent.setStatus(TCPPacket.Status.Ack);
+							System.out.println("Acked packet seq:" + sent.getSeq());
 						}
 					}
 					if (tcpPacket.isACK()) {
