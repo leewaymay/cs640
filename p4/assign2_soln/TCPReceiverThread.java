@@ -51,12 +51,15 @@ public class TCPReceiverThread extends TCPThread {
 
 	@Override
 	protected void customize_close() {
-		System.out.println("Amount of Data Received:                   " + dataReceived);
-		System.out.println("Amount of Packets Received:                " + packetReceived);
-		System.out.println("No of Packets discarded (out of sequence): " + outOfSeq);
-		System.out.println("No of Packets discarded (wrong checksum):  " + wrongChecksum);
-		System.out.println("No of Retransmissions:                     " + retranTime);
-		System.out.println("No of Duplicate Acknowledgements:          " + dupAck);
+		if (!displayedMsg) {
+			displayedMsg = true;
+			System.out.println("Amount of Data Received:                   " + dataReceived);
+			System.out.println("Amount of Packets Received:                " + packetReceived);
+			System.out.println("No of Packets discarded (out of sequence): " + outOfSeq);
+			System.out.println("No of Packets discarded (wrong checksum):  " + wrongChecksum);
+			System.out.println("No of Retransmissions:                     " + retranTime);
+			System.out.println("No of Duplicate Acknowledgements:          " + dupAck);
+		}
 		// flush output
 		if (out != null) {
 			out.flush();

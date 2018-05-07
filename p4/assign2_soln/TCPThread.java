@@ -12,6 +12,7 @@ public class TCPThread extends Thread {
 	protected volatile boolean receivedSYN = false;
 	protected volatile boolean receivedFIN = false;
 	protected volatile boolean sentFIN = false;
+	protected volatile boolean displayedMsg = false;
 	protected static final int MAX_RESENT = 16;
 
 	protected volatile long timeOUT = (long)5*1000*1000*1000;
@@ -318,6 +319,7 @@ public class TCPThread extends Thread {
 					} else if (tcpPacket.isFIN()) {
 						receivedFIN = true;
 						ack_num = tcpPacket.getSeq() + 1;
+						sentFIN = true;
 						safeSend(0, 1, 1, packet.getAddress(), packet.getPort(), 3, tcpPacket.getTimeStamp());
 					} else if (tcpPacket.isDATA()) {
 						// when receivedSYN and packet has data, record data now

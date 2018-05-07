@@ -116,11 +116,14 @@ public class TCPSenderThread extends TCPThread {
 
 	@Override
 	protected void customize_close() {
-		System.out.println("Amount of Data Transferred:                " + dataSent);
-		System.out.println("Amount of Packets Sent:                    " + packetSent);
-		System.out.println("No of Packets discarded (out of sequence): " + outOfSeq);
-		System.out.println("No of Packets discarded (wrong checksum):  " + wrongChecksum);
-		System.out.println("No of Retransmissions:                     " + retranTime);
-		System.out.println("No of Duplicate Acknowledgements:          " + dupAck);
+		if (!displayedMsg) {
+			displayedMsg = true;
+			System.out.println("Amount of Data Transferred:                " + dataSent);
+			System.out.println("Amount of Packets Sent:                    " + packetSent);
+			System.out.println("No of Packets discarded (out of sequence): " + outOfSeq);
+			System.out.println("No of Packets discarded (wrong checksum):  " + wrongChecksum);
+			System.out.println("No of Retransmissions:                     " + retranTime);
+			System.out.println("No of Duplicate Acknowledgements:          " + dupAck);
+		}
 	}
 }
