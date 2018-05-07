@@ -178,7 +178,7 @@ public class TCPThread extends Thread {
 						connected = true;
 						remote_address = out_address;
 						remote_port = out_port;
-					} else if (seg.isFIN()) {
+					} else if (seg.isFIN() && !closed) {
 						closed = true;
 						new CloseConnect().start();
 					}
@@ -300,9 +300,8 @@ public class TCPThread extends Thread {
 							sendData();
 						}
 						// when received FIN+ACK
-						if (tcpPacket.isFIN() && !closed) {
+						if (tcpPacket.isFIN()) {
 							receivedFIN = true;
-							closed = true;
 							ack_num = tcpPacket.getSeq() + 1;
 							sendAck(tcpPacket, packet.getAddress(), packet.getPort());
 						}
