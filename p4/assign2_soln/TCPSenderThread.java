@@ -75,7 +75,6 @@ public class TCPSenderThread extends TCPThread {
 			synchronized (sendQ) {
 				// clean the sliding window (sendQ)
 				while (sendQ.size() > 0 && sendQ.peek().getStatus() == TCPPacket.Status.Ack) {
-					System.out.println("Sender find a seg acked seq:" + sendQ.peek().getSeq());
 					sendQ.poll();
 				}
 

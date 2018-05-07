@@ -176,14 +176,12 @@ public class TCPThread extends Thread {
 				}
 				//check whether this packet has been acknowledged
 				if (seg.getStatus() == TCPPacket.Status.Ack) {
-					System.out.println("Timer acked packet seq:" + seg.getSeq());
 					successfullySent = true;
 					if (seg.isSYN()) {
 						connected = true;
 						remote_address = out_address;
 						remote_port = out_port;
 					} else if (seg.isFIN() && !closed) {
-						System.out.println("Timer acked packet FIN:" + seg.getSeq());
 						closed = true;
 						new CloseConnect().start();
 					}
@@ -195,15 +193,16 @@ public class TCPThread extends Thread {
 			if (Thread.interrupted()) return;
 
 			if (!successfullySent) {
-				if (remainTimes == 0) {
-					if (!sentFIN) {
-						sentFIN = true;
-						safeSend(0, 1, 0, remote_address, remote_port, System.nanoTime());
-					}
+				if (remainTimes == 0) System.out.println("TCP Transfer failed! Lost a packet seq:" + seg.getSeq());
+				// If failed to sent packet, try to close the connection gracefully
+				if (!sentFIN) {
+					sentFIN = true;
+					safeSend(0, 1, 0, remote_address, remote_port, System.nanoTime());
+				} else {
+					// If sent a FIN and still have issues, close connection right now.
+					seg.setStatus(TCPPacket.Status.Lost);
+					new CloseConnect().start();
 				}
-				seg.setStatus(TCPPacket.Status.Lost);
-				System.out.println("Lost a packet seq:" + seg.getSeq());
-				new CloseConnect().start();
 			}
 		}
 	}
@@ -275,7 +274,6 @@ public class TCPThread extends Thread {
 						while (unAckedQ.size() > 0 && unAckedQ.peek().getExpAck() <= tcpPacket.getAck()) {
 							TCPPacket sent  = unAckedQ.poll();
 							sent.setStatus(TCPPacket.Status.Ack);
-							System.out.println("Acked packet seq:" + sent.getSeq());
 						}
 					}
 					if (tcpPacket.isACK()) {
