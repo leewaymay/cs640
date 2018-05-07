@@ -194,7 +194,6 @@ public class TCPThread extends Thread {
 
 			if (!successfullySent) {
 				if (remainTimes == 0) {
-					System.err.println("Maximum number of retransmission has reached! Still cannot send. Stop sending!");
 					if (!sentFIN) {
 						sentFIN = true;
 						safeSend(0, 1, 0, remote_address, remote_port, System.nanoTime());

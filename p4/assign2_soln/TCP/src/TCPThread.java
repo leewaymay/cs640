@@ -11,6 +11,8 @@ public class TCPThread extends Thread {
 	protected volatile boolean closed = false;
 	protected volatile boolean receivedSYN = false;
 	protected volatile boolean receivedFIN = false;
+	protected volatile boolean sentFIN = false;
+	protected volatile boolean displayedMsg = false;
 	protected static final int MAX_RESENT = 16;
 
 	protected volatile long timeOUT = (long)5*1000*1000*1000;
@@ -93,6 +95,7 @@ public class TCPThread extends Thread {
 			if (sendQ != null) sendQ.offer(seg);
 		}
 		if (SYN == 1) {
+			seg.setSeq(initial_seq_num);
 			seq_num = initial_seq_num + 1;
 		} else if (FIN == 1) {
 			seq_num ++;
@@ -178,7 +181,7 @@ public class TCPThread extends Thread {
 						connected = true;
 						remote_address = out_address;
 						remote_port = out_port;
-					} else if (seg.isFIN()) {
+					} else if (seg.isFIN() && !closed) {
 						closed = true;
 						new CloseConnect().start();
 					}
@@ -191,7 +194,10 @@ public class TCPThread extends Thread {
 
 			if (!successfullySent) {
 				if (remainTimes == 0) {
-					System.err.println("Maximum number of retransmission has reached! Still cannot send. Stop sending!");
+					if (!sentFIN) {
+						sentFIN = true;
+						safeSend(0, 1, 0, remote_address, remote_port, System.nanoTime());
+					}
 				}
 				seg.setStatus(TCPPacket.Status.Lost);
 				new CloseConnect().start();
@@ -234,7 +240,6 @@ public class TCPThread extends Thread {
 			newSender.start();
 		}
 		if (p.getStatus() == TCPPacket.Status.Ack) {
-			System.out.println("This packet is already acked!");
 			//ignore it
 		}
 	}
@@ -289,8 +294,8 @@ public class TCPThread extends Thread {
 								}
 							}
 						}
-
-						if (tcpPacket.isSYN() && !connected) {
+						// when received SYN+ACK
+						if (tcpPacket.isSYN()) {
 							// set ack_num to received packet seq_num + 1
 							if (!receivedSYN) ack_num = tcpPacket.getSeq() + 1;
 							receivedSYN = true;
@@ -300,9 +305,8 @@ public class TCPThread extends Thread {
 							sendData();
 						}
 						// when received FIN+ACK
-						if (tcpPacket.isFIN() && !closed) {
+						if (tcpPacket.isFIN()) {
 							receivedFIN = true;
-							closed = true;
 							ack_num = tcpPacket.getSeq() + 1;
 							sendAck(tcpPacket, packet.getAddress(), packet.getPort());
 						}
@@ -314,6 +318,7 @@ public class TCPThread extends Thread {
 					} else if (tcpPacket.isFIN()) {
 						receivedFIN = true;
 						ack_num = tcpPacket.getSeq() + 1;
+						sentFIN = true;
 						safeSend(0, 1, 1, packet.getAddress(), packet.getPort(), 3, tcpPacket.getTimeStamp());
 					} else if (tcpPacket.isDATA()) {
 						// when receivedSYN and packet has data, record data now

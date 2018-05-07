@@ -1,2 +1,16 @@
 name: Wei Li      cs username: wli
 name: He Song     cs username: hes
+
+
+Assumptions:
+1. For receiver side, the time out is initially set to 5 seconds. The first packet is treated as seq_num = o according to the time out update equations.
+
+2. Amonut of Data transfered/received doesn't count duplicate data packets.
+
+3. fast re-transmission is only invoked once, i.e. when the duplicate ack is 4. If more duplicate ack keeps arriving, no more fast re-transmission.
+
+4. The output time is in unit of seconds. Data is in unit of bytes.
+
+
+
+

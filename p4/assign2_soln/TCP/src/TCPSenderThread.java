@@ -8,7 +8,6 @@ public class TCPSenderThread extends TCPThread {
 	private BufferedInputStream in = null;
 	private String filename = null;
 	private boolean needSendFilename = true;
-	private volatile boolean sentFIN = false;
 
 	public TCPSenderThread(int port, String remote_IP, int remote_port, String filename, int mtu, int sws) {
 		this.port = port;
@@ -117,11 +116,14 @@ public class TCPSenderThread extends TCPThread {
 
 	@Override
 	protected void customize_close() {
-		System.out.println("Amount of Data Transferred:                " + dataSent);
-		System.out.println("Amount of Packets Sent:                    " + packetSent);
-		System.out.println("No of Packets discarded (out of sequence): " + outOfSeq);
-		System.out.println("No of Packets discarded (wrong checksum):  " + wrongChecksum);
-		System.out.println("No of Retransmissions:                     " + retranTime);
-		System.out.println("No of Duplicate Acknowledgements:          " + dupAck);
+		if (!displayedMsg) {
+			displayedMsg = true;
+			System.out.println("Amount of Data Transferred:                " + dataSent);
+			System.out.println("Amount of Packets Sent:                    " + packetSent);
+			System.out.println("No of Packets discarded (out of sequence): " + outOfSeq);
+			System.out.println("No of Packets discarded (wrong checksum):  " + wrongChecksum);
+			System.out.println("No of Retransmissions:                     " + retranTime);
+			System.out.println("No of Duplicate Acknowledgements:          " + dupAck);
+		}
 	}
 }
